@@ -405,8 +405,6 @@ struct android_usb_platform_data android_usb_pdata = {
 
 #endif /* CONFIG_USB_ANDROID */
 
-static struct platform_device swift_keyled = {
-	.name = "swift-led",
 };
 static struct platform_device *devices[] __initdata = {
 	&msm_device_smd,
@@ -416,7 +414,8 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_uart_dm1,
 	&msm_device_snd,
 	&msm_device_adspdec,
-	&swift_keyled,
+	&msm_device_tssc,
+	&rt9393_bl,
 };
 
 extern struct sys_timer msm_timer;
