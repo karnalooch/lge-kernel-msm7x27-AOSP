@@ -80,17 +80,7 @@
 
 #define DEBUG	0
 
-#ifdef CONFIG_MACH_MSM7X27_SWIFT
-#if 0
 static unsigned short normal_i2c[] = { I2C_CLIENT_END };
-
-I2C_CLIENT_INSMOD;
-#endif
-#else
-static unsigned short normal_i2c[] = { I2C_CLIENT_END };
-
-I2C_CLIENT_INSMOD;
-#endif
 
 static struct i2c_client *bma150_client = NULL;
 
@@ -104,7 +94,7 @@ static smb380_t smb380;
 
 static struct class *bma_dev_class;
 
-static int bma150_detect(struct i2c_client *client, int kind, struct i2c_board_info *info);
+static int bma150_detect(struct i2c_client *client, struct i2c_board_info *info);
 
 static char bma150_i2c_write(unsigned char reg_addr, unsigned char *data, unsigned char len);
 static char bma150_i2c_read(unsigned char reg_addr, unsigned char *data, unsigned char len);
@@ -204,7 +194,7 @@ static int bma150_open(struct inode *inode, struct file *file)
 		#endif
 	} else {
 		#if DEBUG
-		printk("BMA150: open error\n"); 
+		pr_info("BMA150: open error\n"); 
 		#endif
 		return -1;
 	}
@@ -225,7 +215,7 @@ static int bma150_close(struct inode *inode, struct file *file)
 
 
 /*	ioctl command for BMA150 device file	*/
-static int bma150_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
+static long bma150_unlock_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;
 	unsigned char data[6];
@@ -889,7 +879,7 @@ static const struct file_operations bma150_fops = {
 	.write = bma150_write,
 	.open = bma150_open,
 	.release = bma150_close,
-	.ioctl = bma150_ioctl,
+	.unlocked_ioctl = bma150_unlock_ioctl,
 };
 
 static int bma150_init_chip(struct i2c_client *client)
@@ -1035,8 +1025,7 @@ exit:
 	return err;
 }
 
-static int bma150_detect(struct i2c_client *client, int kind,
-			 struct i2c_board_info *info)
+static int bma150_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
 	strlcpy(info->type, "bma150", I2C_NAME_SIZE);
 	return 0;
@@ -1125,7 +1114,7 @@ struct bma150_device *dev = i2c_get_clientdata(client);
 #endif
 
 static struct i2c_driver bma150_driver = {
-    .class = I2C_CLASS_HWMON,
+	.class = I2C_CLASS_HWMON,
 	.probe = bma150_probe,
 	.remove = bma150_remove,
 	.id_table = bma150_id,
@@ -1138,13 +1127,7 @@ static struct i2c_driver bma150_driver = {
 		.name	= "acceleration",
 	},
 	.detect	= bma150_detect,
-#ifdef CONFIG_MACH_MSM7X27_SWIFT
-#if 0
-        .address_data = &addr_data,
-#endif
-#else
-        .address_data = &addr_data,
-#endif
+        .address_list = normal_i2c,
 };
 
 #ifdef CONFIG_MACH_MSM7X27_SWIFT

@@ -43,17 +43,7 @@
 #define ADBG(fmt, args...) do {} while (0)
 #endif /* AKMD_DEBUG */
 
-#ifdef CONFIG_MACH_MSM7X27_SWIFT
-#if 0
 static unsigned short normal_i2c[] = { I2C_CLIENT_END };
-
-I2C_CLIENT_INSMOD;
-#endif
-#else
-static unsigned short normal_i2c[] = { I2C_CLIENT_END };
-
-I2C_CLIENT_INSMOD;
-#endif
 
 static struct i2c_client *this_client;
 
@@ -200,6 +190,7 @@ static void AKECS_Reset(void)
 
 #define RECOVER_EEPROM_COUNT 7
 
+#ifdef DEBUG
 static int AKECS_WriteEEPROM(void)
 {
 	/* struct akm8973_data *data = i2c_get_clientdata(this_client); */
@@ -282,6 +273,7 @@ static int AKECS_WriteEEPROM(void)
  			 return ret;
 
 }
+#endif
 
 static int AKECS_StartMeasure(void)
 {
@@ -482,9 +474,8 @@ static int akm_aot_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int
-akm_aot_ioctl(struct inode *inode, struct file *file,
-	      unsigned int cmd, unsigned long arg)
+static long
+akm_aot_unlock_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
 	short flag;
@@ -608,9 +599,8 @@ static int akmd_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int
-akmd_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
-	   unsigned long arg)
+static long
+akmd_unlock_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
 
@@ -834,14 +824,14 @@ static struct file_operations akmd_fops = {
 	.owner = THIS_MODULE,
 	.open = akmd_open,
 	.release = akmd_release,
-	.ioctl = akmd_ioctl,
+	.unlocked_ioctl = akmd_unlock_ioctl,
 };
 
 static struct file_operations akm_aot_fops = {
 	.owner = THIS_MODULE,
 	.open = akm_aot_open,
 	.release = akm_aot_release,
-	.ioctl = akm_aot_ioctl,
+	.unlocked_ioctl = akm_aot_unlock_ioctl,
 };
 
 static struct miscdevice akm_aot_device = {
@@ -1023,8 +1013,7 @@ exit_check_functionality_failed:
 	return err;
 }
 
-static int akm8973_detect(struct i2c_client *client, int kind,
-			  struct i2c_board_info *info)
+static int akm8973_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
 	strlcpy(info->type, "akm8973", I2C_NAME_SIZE);
 	return 0;
@@ -1044,6 +1033,8 @@ static const struct i2c_device_id akm8973_id[] = {
 	{ }
 };
 
+MODULE_DEVICE_TABLE(i2c, akm8973_id);
+
 static struct i2c_driver akm8973_driver = {
 	.class = I2C_CLASS_HWMON,
 	.probe = akm8973_probe,
@@ -1058,18 +1049,8 @@ static struct i2c_driver akm8973_driver = {
 		   .name = "akm8973",
 		   },
 	.detect = akm8973_detect,
-#ifdef CONFIG_MACH_MSM7X27_SWIFT
-#if 0
-        .address_data = &addr_data,
-#endif
-#else
-        .address_data = &addr_data,
-#endif
+	.address_list   = normal_i2c,
 };
-
-#ifdef CONFIG_MACH_MSM7X27_SWIFT
-MODULE_DEVICE_TABLE(i2c, akm8973_id);
-#endif
 
 static int __init akm8973_init(void)
 {
