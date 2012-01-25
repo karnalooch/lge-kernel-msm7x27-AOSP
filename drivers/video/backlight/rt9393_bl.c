@@ -38,7 +38,7 @@ module_param_named(debug_mask, lge_bl_debug_mask, int,
 #define KNIGHT_DBG(mask, fmt, args...) \
 	do {\
 		if ((mask) & lge_bl_debug_mask) \
-				printk(KERN_INFO "[MC] [%-18s:%5d] " \
+				pr_info("[MC] [%-18s:%5d] " \
 					fmt, __func__, __LINE__, ## args);\
 		} while (0)
 #else
@@ -227,13 +227,13 @@ DEVICE_ATTR(gpio, 0664, gpio_no_show, NULL);
 
 static int rt9393_probe(struct platform_device *pdev)
 {
-  printk("PROBING BACKLIGHT\n");
+        pr_info("PROBING BACKLIGHT\n");
 	int err;
 	struct backlight_properties props;
 	err = gpio_request(GPIO_BL_EN, 0);
 
 	if (err < 0 ) {
-		printk("Cannot get the gpio pin : %d\n", GPIO_BL_EN);
+		pr_err("Cannot get the gpio pin : %d\n", GPIO_BL_EN);
 		return err;
 	}
 	
@@ -241,7 +241,7 @@ static int rt9393_probe(struct platform_device *pdev)
 	
 	bd = backlight_device_register("rt9393",&pdev->dev, NULL , &rt9393_ops,&props);
 	if (IS_ERR(bd)) {
-		printk("failed to register backlight device\n");
+		pr_err("failed to register backlight device\n");
 		return PTR_ERR(bd);
 	}
 
@@ -310,7 +310,7 @@ static int __init rt9393_init(void)
 
 	ret = platform_driver_register(&this_driver);
 	if (ret) {
-		printk("platform driver cannot register\n");
+		pr_err("platform driver cannot register\n");
 		return ret;
 	}
 	return 0;
