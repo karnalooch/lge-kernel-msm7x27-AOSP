@@ -25,6 +25,8 @@
 
 #include <mach/pmic.h>
 
+#include "board-swift.h"
+
 /*****************************
 keypad LED
 ******************************/
@@ -36,7 +38,7 @@ void swift_turn_off_led(void)
 
 	ret = pmic_set_led_intensity(LED_KEYPAD, 0);
 	if (ret)
-		printk(KERN_INFO "Can't turn of led\n");	
+		pr_err("Can't turn of led\n");
 }
 
 static void swift_keypad_bl_led_set(struct led_classdev *led_cdev,
@@ -54,7 +56,6 @@ static struct led_classdev swift_kp_bl_led = {
 	.brightness_set		= swift_keypad_bl_led_set,
 	.brightness		= LED_OFF,
 };
-
 
 
 static int swift_led_probe(struct platform_device *pdev)
