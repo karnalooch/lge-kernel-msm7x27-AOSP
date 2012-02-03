@@ -1,4 +1,4 @@
-/* arch/arm/mach-msm/include/mach/board_thunderg.h
+/* arch/arm/mach-msm/include/mach/board-swift.h
  * Copyright (C) 2009 LGE, Inc.
  * Author: SungEun Kim <cleaneye@lge.com>
  *
@@ -14,11 +14,13 @@
 #ifndef __ARCH_MSM_BOARD_SWIFT_H
 #define __ARCH_MSM_BOARD_SWIFT_H
 
+#include <asm/setup.h>
+
 #include <linux/types.h>
 #include <linux/list.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
-#include <asm/setup.h>
+
 #include "pm.h"
 
 /* LGE_S [ynj.kim@lge.com] 2010-05-21 : atcmd - virtual device */
@@ -34,33 +36,27 @@
 /* sdcard related macros */
 #ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
 #define GPIO_SD_DETECT_N	49
-#define GPIO_MMC_COVER_DETECT 19
-#define VREG_SD_LEVEL       3000
+#define GPIO_MMC_COVER_DETECT	19
+#define VREG_SD_LEVEL		2850
 
-#define GPIO_SD_DATA_3      51
-#define GPIO_SD_DATA_2      52
-#define GPIO_SD_DATA_1      53
-#define GPIO_SD_DATA_0      54
-#define GPIO_SD_CMD         55
-#define GPIO_SD_CLK         56
 #endif
 
 /* touch-screen macros */
-#define TS_X_MIN			0
-#define TS_X_MAX			320
-#define TS_Y_MIN			0
-#define TS_Y_MAX			480
+#define TS_X_MIN		0
+#define TS_X_MAX		320
+#define TS_Y_MIN		0
+#define TS_Y_MAX		480
 #define TS_GPIO_I2C_SDA		91
 #define TS_GPIO_I2C_SCL		90
-#define TS_GPIO_IRQ			92
+#define TS_GPIO_IRQ		92
 #define TS_I2C_SLAVE_ADDR	0x20
 
 /* camera */
-#define CAM_I2C_SLAVE_ADDR			0x1a
-#define GPIO_CAM_RESET		 		0		/* GPIO_0 */
-#define GPIO_CAM_PWDN		 		1		/* GPIO_1 */
-#define GPIO_CAM_MCLK				15		/* GPIO_15 */
-#define ISX005_DEFAULT_CLOCK_RATE	24000000
+#define CAM_I2C_SLAVE_ADDR		0x1a
+#define GPIO_CAM_RESET			0		/* GPIO_0 */
+#define GPIO_CAM_PWDN		 	1		/* GPIO_1 */
+#define GPIO_CAM_MCLK			15		/* GPIO_15 */
+#define CAM_DEFAULT_CLOCK_RATE		24000000
 
 #define CAM_POWER_OFF		0
 #define CAM_POWER_ON		1
@@ -105,7 +101,7 @@ enum {
 	BT_PCM_SYNC     = 70,
 	BT_PCM_CLK      = 71,
 	BT_HOST_WAKE    = 83,
-	BT_RESET_N			= 96,
+	BT_RESET_N	= 96,
 };
 
 /* for desk dock
@@ -123,12 +119,13 @@ extern struct i2c_board_info i2c_devices[1];
 
 extern int camera_power_state;
 extern int lcd_bl_power_state;
+
 /* interface functions */
-void config_camera_on_gpios(void);
+int config_camera_on_gpios(void);
 void config_camera_off_gpios(void);
 void camera_power_mutex_lock(void);
 void camera_power_mutex_unlock(void);
-void thunderg_pwrsink_resume(void);
-
+void swift_pwrsink_resume(void);
+void swift_turn_off_led(void);
 
 #endif

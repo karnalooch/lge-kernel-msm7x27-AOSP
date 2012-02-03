@@ -24,6 +24,7 @@
 #include <linux/delay.h>
 #include <linux/bootmem.h>
 #include <linux/power_supply.h>
+#include <linux/rt9393_bl.h>
 
 
 #include <mach/hardware.h>
@@ -405,7 +406,6 @@ struct android_usb_platform_data android_usb_pdata = {
 
 #endif /* CONFIG_USB_ANDROID */
 
-};
 static struct platform_device *devices[] __initdata = {
 	&msm_device_smd,
 	&msm_device_dmov,
@@ -415,7 +415,6 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_snd,
 	&msm_device_adspdec,
 	&msm_device_tssc,
-	&rt9393_bl,
 };
 
 extern struct sys_timer msm_timer;

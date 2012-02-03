@@ -19,6 +19,7 @@
 #include <linux/i2c-gpio.h>
 #include <linux/rfkill.h>
 #include <linux/platform_device.h>
+#include <linux/backlight.h>
 #include <asm/setup.h>
 
 #if __GNUC__
@@ -324,11 +325,6 @@ struct lm3530_platform_data {
 };
 //LGE_DEV_PORTING UNIVA_E
 
-/* rt9393 backlight */
-struct rt9393_platform_data {
-	int gpio_en;
-};
-
 /* LCD panel */
 struct msm_panel_lgit_pdata {
 	int gpio;
@@ -368,7 +364,6 @@ struct msm_panel_ldp_pdata {
 	int (*pmic_backlight)(int level);
 	int (*panel_num)(void);
 	void (*panel_config_gpio)(int);
-	int *gpio_num;
 	int initialized;
 	int maker_id;
 };
@@ -390,6 +385,12 @@ struct msm_panel_novatek_pdata {
 	int *gpio_num;
 	int initialized;
 };
+
+struct msm_panel_samsung_pdata {
+	int gpio;
+	int (*pmic_backlight)(struct backlight_device *);
+};
+
 
 /* tsc2007 platform data */
 struct tsc2007_platform_data {
