@@ -68,6 +68,7 @@ DEFINE_MUTEX(isx005_mutex);
 struct platform_device *isx005_pdev;
 
 int pclk_rate;
+static int mclk_rate = 24000000;
 static int always_on;
 
 static int32_t isx005_i2c_txdata(unsigned short saddr,

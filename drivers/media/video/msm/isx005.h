@@ -23,7 +23,6 @@
 #include <mach/camera.h>
 
 extern struct isx005_reg isx005_regs;
-extern int mclk_rate;
 
 enum isx005_width {
 	BYTE_LEN,
@@ -132,6 +131,7 @@ enum {
 	CAMERA_SCENE_NIGHT,
 	CAMERA_SCENE_SUNSET,
 };
+
 
 #if defined(CONFIG_MACH_MSM7X27_THUNDERG) || \
 	defined(CONFIG_MACH_MSM7X27_THUNDERC)
