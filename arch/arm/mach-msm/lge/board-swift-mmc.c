@@ -38,32 +38,19 @@ static void sdcc_gpio_init(void)
 	rc = gpio_tlmm_config(GPIO_CFG(GPIO_SD_DETECT_N, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,
 									GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc)
-		printk(KERN_ERR "%s: Failed to configure GPIO %d\n",
+		pr_err("%s: Failed to configure GPIO_SD_DETECT %d\n",
 					__func__, rc);
 	if (gpio_request(GPIO_MMC_COVER_DETECT, "sdc1_status_socket_irq"))
 		pr_err("failed to request gpio sdc1_status_irq\n");
 	rc = gpio_tlmm_config(GPIO_CFG(GPIO_MMC_COVER_DETECT, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,
 								   GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc)
-		printk(KERN_ERR "%s: Failed to configure GPIO %d\n",
+		pr_err("%s: Failed to configure GPIO_MMC_COVER_DETECT %d\n",
 					__func__, rc);
 #endif
+
 	/* SDC1 GPIOs */
 #ifdef CONFIG_MMC_MSM_SDC1_SUPPORT
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
-	if (gpio_request(GPIO_SD_DATA_3, "sdc1_data_3"))
-		pr_err("failed to request gpio sdc1_data_3\n");
-	if (gpio_request(GPIO_SD_DATA_2, "sdc1_data_2"))
-		pr_err("failed to request gpio sdc1_data_2\n");
-	if (gpio_request(GPIO_SD_DATA_1, "sdc1_data_1"))
-		pr_err("failed to request gpio sdc1_data_1\n");
-	if (gpio_request(GPIO_SD_DATA_0, "sdc1_data_0"))
-		pr_err("failed to request gpio sdc1_data_0\n");
-	if (gpio_request(GPIO_SD_CMD, "sdc1_cmd"))
-		pr_err("failed to request gpio sdc1_cmd\n");
-	if (gpio_request(GPIO_SD_CLK, "sdc1_clk"))
-		pr_err("failed to request gpio sdc1_clk\n");
-#else
 	if (gpio_request(51, "sdc1_data_3"))
 		pr_err("failed to request gpio sdc1_data_3\n");
 	if (gpio_request(52, "sdc1_data_2"))
@@ -76,7 +63,6 @@ static void sdcc_gpio_init(void)
 		pr_err("failed to request gpio sdc1_cmd\n");
 	if (gpio_request(56, "sdc1_clk"))
 		pr_err("failed to request gpio sdc1_clk\n");
-#endif
 #endif
 
 	/* SDC2 GPIOs */
@@ -130,16 +116,6 @@ static void sdcc_gpio_init(void)
 
 static unsigned sdcc_cfg_data[][6] = {
 	/* SDC1 configs */
-#ifdef  CONFIG_MMC_MSM_CARD_HW_DETECTION
-	{
-	GPIO_CFG(GPIO_SD_DATA_3, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_SD_DATA_2, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_SD_DATA_1, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_SD_DATA_0, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_SD_CMD, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	GPIO_CFG(GPIO_SD_CLK, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
-	},
-#else	
 	{
 	GPIO_CFG(51, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),
 	GPIO_CFG(52, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),
@@ -148,7 +124,6 @@ static unsigned sdcc_cfg_data[][6] = {
 	GPIO_CFG(55, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),
 	GPIO_CFG(56, 1, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
 	},
-#endif	
 	/* SDC2 configs */
 	{
 	GPIO_CFG(62, 2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
@@ -179,7 +154,6 @@ static unsigned sdcc_cfg_data[][6] = {
 };
 
 static unsigned long vreg_sts, gpio_sts;
-static unsigned mpp_mmc = 2;
 static struct vreg *vreg_mmc;
 
 static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
@@ -198,7 +172,7 @@ static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 		rc = gpio_tlmm_config(sdcc_cfg_data[dev_id - 1][i],
 			enable ? GPIO_CFG_ENABLE : GPIO_CFG_DISABLE);
 		if (rc)
-			printk(KERN_ERR "%s: gpio_tlmm_config(%#x)=%d\n",
+			pr_err("%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, sdcc_cfg_data[dev_id - 1][i], rc);
 	}
 }
@@ -218,36 +192,20 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 		clear_bit(pdev->id, &vreg_sts);
 
 		if (!vreg_sts) {
-			if (machine_is_msm7x25_ffa() ||
-					machine_is_msm7x27_ffa()) {
-				rc = mpp_config_digital_out(mpp_mmc,
-				     MPP_CFG(MPP_DLOGIC_LVL_MSMP,
-				     MPP_DLOGIC_OUT_CTRL_LOW));
-			} else
-				rc = vreg_disable(vreg_mmc);
+			rc = vreg_disable(vreg_mmc);
 			if (rc)
-				printk(KERN_ERR "%s: return val: %d \n",
+				pr_err("%s: return val: %d \n",
 					__func__, rc);
 		}
 		return 0;
 	}
 
 	if (!vreg_sts) {
-		if (machine_is_msm7x25_ffa() || machine_is_msm7x27_ffa()) {
-			rc = mpp_config_digital_out(mpp_mmc,
-			     MPP_CFG(MPP_DLOGIC_LVL_MSMP,
-			     MPP_DLOGIC_OUT_CTRL_HIGH));
-		} else {
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
-			rc = vreg_set_level(vreg_mmc, VREG_SD_LEVEL);
-#else		
-			rc = vreg_set_level(vreg_mmc, 2650);
-#endif
-			if (!rc)
-				rc = vreg_enable(vreg_mmc);
-		}
+		rc = vreg_set_level(vreg_mmc, VREG_SD_LEVEL);
+		if (!rc)
+			rc = vreg_enable(vreg_mmc);
 		if (rc)
-			printk(KERN_ERR "%s: return val: %d \n",
+			pr_err("%s: return val: %d \n",
 					__func__, rc);
 	}
 	set_bit(pdev->id, &vreg_sts);
@@ -255,28 +213,44 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 	return 0;
 }
 
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
-static unsigned int thunderg_sdcc_slot_status(struct device *dev)
+static unsigned int swift_sdcc_slot_status(struct device *dev)
 {
-	return !(gpio_get_value(GPIO_MMC_COVER_DETECT)||gpio_get_value(GPIO_SD_DETECT_N));
+	return !(gpio_get_value(GPIO_MMC_COVER_DETECT) || gpio_get_value(GPIO_SD_DETECT_N));
 }
-#endif
+
+#define SWIFT_MMC_VDD (MMC_VDD_165_195 | MMC_VDD_20_21 | MMC_VDD_21_22 \
+			| MMC_VDD_22_23 | MMC_VDD_23_24 | MMC_VDD_24_25 \
+			| MMC_VDD_25_26 | MMC_VDD_26_27 | MMC_VDD_27_28 \
+			| MMC_VDD_28_29 | MMC_VDD_29_30)
+
+static struct mmc_platform_data msm7x2x_sdc1_data = {
+	.ocr_mask	= SWIFT_MMC_VDD,
+	.translate_vdd	= msm_sdcc_setup_power,
+	.status 	= swift_sdcc_slot_status,
+	.status_irq 	= MSM_GPIO_TO_INT(GPIO_MMC_COVER_DETECT),
+	.irq_flags	= IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+	.mmc_bus_width	= MMC_CAP_4_BIT_DATA,
+	.msmsdcc_fmin	= 144000,
+	.msmsdcc_fmid	= 24576000,
+	.msmsdcc_fmax	= 49152000,
+	.nonremovable	= 0,
+};
 
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, BCM4325 control gpio */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 static unsigned int bcm432x_sdcc_wlan_slot_status(struct device *dev)
 {
-	printk(KERN_ERR "%s: %d %d\n", __func__, CONFIG_BCM4325_GPIO_WL_RESET, gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET));
-    return gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET);
+	pr_err("%s: %d %d\n", __func__, CONFIG_BCM4325_GPIO_WL_RESET, gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET));
+	return gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET);
 }
 
 static struct mmc_platform_data bcm432x_sdcc_wlan_data = {
-    .ocr_mask   	= MMC_VDD_30_31,
+	.ocr_mask   	= MMC_VDD_30_31,
 	.translate_vdd	= msm_sdcc_setup_power,
-    .status     	= bcm432x_sdcc_wlan_slot_status,
-	.status_irq		= MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET),
-    .irq_flags      = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-    .mmc_bus_width  = MMC_CAP_4_BIT_DATA,
+	.status     	= bcm432x_sdcc_wlan_slot_status,
+	.status_irq	= MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET),
+	.irq_flags      = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
 	.msmsdcc_fmin	= 144000,
 	.msmsdcc_fmid	= 24576000,
 	.msmsdcc_fmax	= 49152000,
@@ -285,34 +259,13 @@ static struct mmc_platform_data bcm432x_sdcc_wlan_data = {
 #endif  /* CONFIG_LGE_BCM432X_PATCH*/
 /* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, BCM4325 control gpio */
 
-static struct mmc_platform_data msm7x2x_sdc1_data = {
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
-	.ocr_mask		= MMC_VDD_30_31,
-	.translate_vdd	= msm_sdcc_setup_power,
-	.status 		= thunderg_sdcc_slot_status,
-	.status_irq 	= MSM_GPIO_TO_INT(GPIO_MMC_COVER_DETECT),
-	.irq_flags		= IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-	.mmc_bus_width	= MMC_CAP_4_BIT_DATA,
-#else
-	.ocr_mask		= MMC_VDD_28_29,
-	.translate_vdd	= msm_sdcc_setup_power,
-	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
-#endif	
-	.msmsdcc_fmin	= 144000,
-	.msmsdcc_fmid	= 24576000,
-	.msmsdcc_fmax	= 49152000,
-	.nonremovable	= 0,
-};
-
 static void __init msm7x2x_init_mmc(void)
 {
-	if (!machine_is_msm7x25_ffa() && !machine_is_msm7x27_ffa()) {
-		vreg_mmc = vreg_get(NULL, "wlan");
-		if (IS_ERR(vreg_mmc)) {
-			printk(KERN_ERR "%s: vreg get failed (%ld)\n",
-			       __func__, PTR_ERR(vreg_mmc));
-			return;
-		}
+	vreg_mmc = vreg_get(NULL, "wlan");
+	if (IS_ERR(vreg_mmc)) {
+		pr_err("%s: vreg get failed (%ld)\n",
+			__func__, PTR_ERR(vreg_mmc));
+		return;
 	}
 
 	sdcc_gpio_init();
@@ -335,7 +288,7 @@ static void __init msm7x2x_init_mmc(void)
 //	gpio_configure(CONFIG_BCM4325_GPIO_WL_HOSTWAKEUP, GPIOF_INPUT);
 
 	/* Register platform device */
-    msm_add_sdcc(2, &bcm432x_sdcc_wlan_data);
+	msm_add_sdcc(2, &bcm432x_sdcc_wlan_data);
 
 	/* Enable RESET IRQ for wlan card detect */
 	enable_irq(gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET));
