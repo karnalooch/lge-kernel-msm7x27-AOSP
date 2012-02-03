@@ -88,7 +88,6 @@ obj-y += mddi_sharp.o
 obj-y += mddi_orise.o
 obj-y += mddi_quickvx.o
 obj-y += mddi_hitachi_hvga.o
-obj-y += mddi_innotek.o 
 
 # LGE_DEV_PORTING UNIVA_S [ks82.jung@lge.com]
 obj-y += mddi_ldp_hvga.o
@@ -105,7 +104,8 @@ obj-$(CONFIG_FB_MSM_MDDI_SHARP_QVGA_128x128) += mddi_sharp.o
 obj-$(CONFIG_FB_MSM_MDDI_ORISE) += mddi_orise.o
 obj-$(CONFIG_FB_MSM_MDDI_QUICKVX) += mddi_quickvx.o
 obj-$(CONFIG_FB_MSM_MDDI_HITACHI_HVGA) += mddi_hitachi_hvga.o
-obj-$(CONFIG_FB_MSM_MDDI_SWIFT) += mddi_innotek.o
+obj-$(CONFIG_FB_MSM_MDDI_SAMSUNG_COMMON) += mddi_samsung.o
+obj-$(CONFIG_FB_MSM_MDDI_SAMSUNG_INNOTEK_HVGA) += mddi_samsung_innotek_hvga.o
 
 # LGE_DEV_PORTING UNIVA_S [ks82.jung@lge.com]
 obj-$(CONFIG_FB_MSM_MDDI_LDP_HVGA) += mddi_ldp_hvga.o

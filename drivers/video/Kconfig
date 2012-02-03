@@ -2318,6 +2318,11 @@ config FB_MSM_MDDI_QUICKVX
 	select FB_MSM_MDDI
 	default n
 
+config FB_MSM_MDDI_SAMSUNG_COMMON
+	bool
+	select FB_MSM_MDDI
+	default n
+
 config FB_MSM_MDDI_AUTO_DETECT
 	bool
 	select FB_MSM_MDDI
@@ -2420,6 +2425,8 @@ config FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
 	bool
 	select FB_MSM_MIPI_DSI_NOVATEK
 	default n
+
+
 
 choice
 	prompt "LCD Panel"
@@ -2538,9 +2545,10 @@ config FB_MSM_MDDI_SHARP_QVGA_128x128
 	select FB_MSM_MDDI
 	---help---
 	  Support for MDDI Sharp QVGA (240x320) and 128x128 dual panel
-config FB_MSM_MDDI_SWIFT
+
+config FB_MSM_MDDI_SAMSUNG_INNOTEK_HVGA
        bool "MDDI LG GT540 Swift(Optimus)"
-       select FB_MSM_MDDI 
+       select FB_MSM_MDDI_SAMSUNG_COMMON
        ---help---
          Support for MDDI LG GT540 Swift(Optimus) 
 
