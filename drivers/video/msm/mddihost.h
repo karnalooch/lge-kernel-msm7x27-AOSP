@@ -261,6 +261,7 @@ int pmdh_clk_func(int enable);
 void mddi_host_register_cmds_write8(unsigned reg_addr, unsigned count,
 	unsigned char reg_val[], boolean wait, mddi_llist_done_cb_type done_cb,
 	mddi_host_type host);
+
 void mddi_host_register_cmds_write32(unsigned reg_addr, unsigned count, unsigned int reg_val[], boolean wait, mddi_llist_done_cb_type done_cb, mddi_host_type host);
 #endif
 
