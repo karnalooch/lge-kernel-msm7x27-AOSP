@@ -19,9 +19,9 @@
 #include "board-swift.h"
 
 int lcd_bl_power_state=0;
-int thunderg_pwrsink_suspend_noirq(struct device *dev)
+int swift_pwrsink_suspend_noirq(struct device *dev)
 {
-	printk(KERN_INFO"%s: configure gpio for suspend\n", __func__);
+	pr_info("%s: configure gpio for suspend\n", __func__);
 	camera_power_mutex_lock();
 
 	if(camera_power_state == CAM_POWER_ON)
@@ -50,9 +50,9 @@ int thunderg_pwrsink_suspend_noirq(struct device *dev)
 	return 0;
 }
 
-int thunderg_pwrsink_resume_noirq(struct device *dev)
+int swift_pwrsink_resume_noirq(struct device *dev)
 {
-	printk(KERN_INFO"%s: configure gpio for resume\n", __func__);
+	pr_info("%s: configure gpio for resume\n", __func__);
 	camera_power_mutex_lock();
 
 	if(camera_power_state == CAM_POWER_ON || lcd_bl_power_state == BL_POWER_RESUME)
@@ -84,7 +84,7 @@ int thunderg_pwrsink_resume_noirq(struct device *dev)
 	return 0;
 }
 
-void thunderg_pwrsink_resume()
+void swift_pwrsink_resume()
 {
 	gpio_tlmm_config(GPIO_CFG(GPIO_LCD_BL_EN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	gpio_direction_output(GPIO_LCD_BL_EN, 1);
@@ -105,22 +105,22 @@ void thunderg_pwrsink_resume()
 	lcd_bl_power_state = BL_POWER_RESUME;
 }
 
-static struct dev_pm_ops thunderg_pwrsink_data = {
-	.suspend_noirq = thunderg_pwrsink_suspend_noirq,
-	.resume_noirq = thunderg_pwrsink_resume_noirq,
+static struct dev_pm_ops swift_pwrsink_data = {
+	.suspend_noirq = swift_pwrsink_suspend_noirq,
+	.resume_noirq = swift_pwrsink_resume_noirq,
 };
 
-static struct platform_device thunderg_pwrsink_device = {
+static struct platform_device swift_pwrsink_device = {
 	.name = "lge-pwrsink",
 	.id = -1,
 	.dev = {
-		.platform_data = &thunderg_pwrsink_data,
+		.platform_data = &swift_pwrsink_data,
 	},
 };
 
 void __init lge_add_pm_devices(void)
 {
 	lcd_bl_power_state = BL_POWER_RESUME;
-	platform_device_register(&thunderg_pwrsink_device);
+	platform_device_register(&swift_pwrsink_device);
 }
 
