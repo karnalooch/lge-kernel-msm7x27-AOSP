@@ -24,8 +24,6 @@
 
 #include "board-swift.h"
 
-int mclk_rate = 24000000;
-
 DEFINE_MUTEX(camera_power_mutex);
 int camera_power_state;
 
@@ -86,14 +84,14 @@ static void config_gpio_table(uint32_t *table, int len)
 	for (n = 0; n < len; n++) {
 		rc = gpio_tlmm_config(table[n], GPIO_CFG_ENABLE);
 		if (rc) {
-			printk(KERN_ERR "%s: gpio_tlmm_config(%#x)=%d\n",
+			pr_err("%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, table[n], rc);
 			break;
 		}
 	}
 }
 
-void config_camera_on_gpios(void)
+int config_camera_on_gpios(void)
 {
 	config_gpio_table(camera_on_gpio_table,
 		ARRAY_SIZE(camera_on_gpio_table));
@@ -108,12 +106,13 @@ void config_camera_off_gpios(void)
 
 int camera_power_on (void)
 {
-	int rc;
+	int rc = 0;
+	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();
 	if(lcd_bl_power_state == BL_POWER_SUSPEND)
 	{
-		thunderg_pwrsink_resume();
+		swift_pwrsink_resume();
 		mdelay(50);
 	}
 
@@ -122,13 +121,13 @@ int camera_power_on (void)
 	gpio_set_value(GPIO_CAM_RESET, 0);
 	gpio_set_value(GPIO_CAM_PWDN, 0);
 
-	struct vreg *vreg_mmc = vreg_get(0, "mmc");
+	vreg_mmc = vreg_get(0, "mmc");
 	vreg_set_level(vreg_mmc, 2800);
 	vreg_enable(vreg_mmc);
 
 	mdelay(5);
 	/*M Clock -24Mhz*/
-	msm_camio_clk_rate_set(mclk_rate);
+	msm_camio_clk_rate_set(CAM_DEFAULT_CLOCK_RATE);
 	mdelay(5);
 	msm_camio_camif_pad_reg_reset();
 	mdelay(5);
@@ -144,7 +143,8 @@ int camera_power_on (void)
 
 	camera_power_state = CAM_POWER_ON;
 
-power_on_fail:
+
+/* power_on_fail: */
 	camera_power_mutex_unlock();
 	return rc;
 
@@ -152,12 +152,13 @@ power_on_fail:
 
 int camera_power_off (void)
 {
-	int rc;
+	int rc = 0;
+	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();
 
 	if (lcd_bl_power_state == BL_POWER_SUSPEND) {
-		thunderg_pwrsink_resume();
+		swift_pwrsink_resume();
 		mdelay(50);
 	}
 	/*Nstandby low*/
@@ -168,16 +169,14 @@ int camera_power_off (void)
 	gpio_set_value(GPIO_CAM_RESET, 0);
 
 	/* it is for rev.c and default */
-	struct vreg *vreg_mmc = vreg_get(0, "mmc");
+	vreg_mmc = vreg_get(0, "mmc");
 	vreg_set_level(vreg_mmc, 0);
 	vreg_disable(vreg_mmc);
 	camera_power_state = CAM_POWER_OFF;
 
-
-power_off_fail:
+/* power_off_fail: */
 	camera_power_mutex_unlock();
 	return rc;
-
 }
 
 static struct msm_camera_device_platform_data msm_camera_device_data = {
@@ -201,9 +200,9 @@ static struct msm_camera_sensor_info msm_camera_sensor_isx005_data = {
 	.sensor_reset   = GPIO_CAM_RESET,
 	.sensor_pwd     = GPIO_CAM_PWDN,
 	.vcm_pwd        = 0,
-	.vcm_enable		= 0,
+	.vcm_enable	= 0,
 	.pdata          = &msm_camera_device_data,
-	.flash_data		= &flash_none,
+	.flash_data	= &flash_none,
 };
 
 static struct platform_device msm_camera_sensor_isx005 = {
@@ -216,7 +215,7 @@ static struct platform_device msm_camera_sensor_isx005 = {
 
 #endif
 
-static struct platform_device *thunderg_camera_devices[] __initdata = {
+static struct platform_device *swift_camera_devices[] __initdata = {
 #if defined (CONFIG_ISX005)
 	&msm_camera_sensor_isx005,
 #endif
@@ -224,5 +223,5 @@ static struct platform_device *thunderg_camera_devices[] __initdata = {
 
 void __init lge_add_camera_devices(void)
 {
-	platform_add_devices(thunderg_camera_devices, ARRAY_SIZE(thunderg_camera_devices));
+	platform_add_devices(swift_camera_devices, ARRAY_SIZE(swift_camera_devices));
 }
