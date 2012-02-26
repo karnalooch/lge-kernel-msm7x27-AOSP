@@ -212,7 +212,7 @@ static void mddi_samsung_vsync_set_handler(msm_fb_vsync_handler_type handler,	/*
 	boolean error = FALSE;
 	unsigned long flags;
 
-	pr_info("%s : handler = %x\n", __func__, (unsigned int)handler);
+	pr_debug("%s : handler = %x\n", __func__, (unsigned int)handler);
 
 	/* Disable interrupts */
 	spin_lock_irqsave(&mddi_host_spin_lock, flags);
@@ -409,6 +409,7 @@ static int __devinit mddi_samsung_probe(struct platform_device *pdev)
 		pr_err("No platformdata or lcd_reset gpio set");
 		return ENODEV;
 	}
+
         err = gpio_request(mddi_samsung_pdata->gpio, 0);
         if (err < 0 ) {
                 pr_err("Cannot get the gpio pin : %d\n", mddi_samsung_pdata->gpio);
@@ -441,9 +442,7 @@ int mddi_samsung_device_register(struct msm_panel_info *pinfo)
 {
 	int ret;
 	struct platform_device *pdev = NULL;
-#if DEBUG_LCD
 	pr_debug("%s\n", __func__);
-#endif
 /*
 	if ((channel > 2) || ch_used[channel])
 		return -ENODEV;*/
@@ -456,7 +455,7 @@ int mddi_samsung_device_register(struct msm_panel_info *pinfo)
 	ch_used[channel] = TRUE;*/
 	
 /*	pdev = platform_device_alloc("mddi_samsung", (panel << 8)|channel); */
-	pdev = platform_device_alloc("mddi_samsung", 0); 
+	pdev = platform_device_alloc("mddi_samsung", 256);
 
 	if (!pdev)
 		return -ENOMEM;
