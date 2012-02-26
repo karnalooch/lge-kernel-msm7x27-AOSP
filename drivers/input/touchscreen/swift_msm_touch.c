@@ -12,6 +12,11 @@
  * GNU General Public License for more details.
  *
  */
+
+
+#include <asm/mach-types.h>
+#include <asm/uaccess.h>
+
 #include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -20,18 +25,17 @@
 #include <linux/platform_device.h>
 #include <linux/jiffies.h>
 #include <linux/io.h>
-#include <asm/mach-types.h>
-
-#include <mach/msm_touch.h>
-
 #include <linux/syscalls.h>
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/fcntl.h>
-#include <asm/uaccess.h>
 #include <linux/ioctl.h>
 #include <linux/miscdevice.h>
+
+#include <mach/msm_touch.h>
+
 #include "../../../arch/arm/mach-msm/proc_comm.h"
+
 
 /* HW register map */
 #define TSSC_CTL_REG      0x100
@@ -136,32 +140,32 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
 
 	set_fs(KERNEL_DS);
 
-	printk("[SWIFT]TS_CAL. sys_open-- for READ........\n");
+	pr_info("[SWIFT]TS_CAL. sys_open-- for READ........\n");
 	fd = sys_open(filename, O_RDWR, 0);
 	if (fd < 0) {
-		printk(KERN_WARNING "%s: Can not open %s\n",
+		pr_warn("%s: Can not open %s\n",
 				__func__, filename);
 		return -ENOENT;
 	}
 
-	printk("[SWIFT]TS_CAL. sys_lseek........\n");
+	pr_info("[SWIFT]TS_CAL. sys_lseek........\n");
 	count = sys_lseek(fd, (off_t)0, 2);
 	if (count == 0) {
-		printk("[SWIFT]TS_CAL. sys_lseek ERROR count == 0........\n");
+		pr_info("[SWIFT]TS_CAL. sys_lseek ERROR count == 0........\n");
 		err = -EIO;
 		goto err_close_file;
 	}
 
 	sys_lseek(fd, (off_t)0, 0);
 
-	printk("[SWIFT]TS_CAL. kmalloc......count[%d]..\n",count);
-	printk("[SWIFT] sys_read........\n");
+	pr_info("[SWIFT]TS_CAL. kmalloc......count[%d]..\n",count);
+	pr_info("[SWIFT] sys_read........\n");
 
 	(unsigned)sys_read(fd, (char *)data1, count);
 
 	count1 = 0;
 	for(i =0 ; i < count ; i++){
-		//printk("data[%d]=0x%x\n",i,data1[i]);
+		//pr_info("data[%d]=0x%x\n",i,data1[i]);
 		if((data1[i]== 0x2C)||(data1[i]== 0x0D)||data1[i]== 0x0A){
 			ii = 0;
 			value = 0;
@@ -173,7 +177,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
 					value1*= 10;
 
 				value +=(data2[ii]-0x30)*value1;
-				//printk("[SWIFT]ii[%d] FIND value[%d]..data2[%d]... count1[%d]\n",ii,value,data2[ii],count1);
+				//pr_info("[SWIFT]ii[%d] FIND value[%d]..data2[%d]... count1[%d]\n",ii,value,data2[ii],count1);
 
 				if (count1 == 0) {
 					cal_data[cal_data_count] = value;
@@ -188,19 +192,19 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
 		}
 		else{
 			data2[count1]= data1[i];
-			//printk("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i);
+			//pr_info("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i);
 			count1+=1;     
 		} 
 	}
 
-	printk("[SWIFT]TS_CAL. sys_close........\n");
+	pr_info("[SWIFT]TS_CAL. sys_close........\n");
 	sys_close(fd);
 	set_fs(old_fs);
 
 	return 0;
 
 err_close_file:
-	printk("[SWIFT]err_close_file!!........\n");
+	pr_info("[SWIFT]err_close_file!!........\n");
 	sys_close(fd);
 	set_fs(old_fs);
 	return err;
@@ -220,13 +224,13 @@ static int touch_cal_open(struct inode *inode, struct file *file)
 {	   
 	 int status = 0;
 
-	 printk("touch_cal_open\n"); 	 
+	 pr_info("touch_cal_open\n"); 	 
 	 return status;
 }
 
 static int touch_cal_release(struct inode *inode, struct file *file)
 {
-	 printk("touch_release\n"); 	 
+	 pr_info("touch_release\n"); 	 
 	 return 0;
 }
 void apply_cal_data(int *cal_data)
@@ -277,12 +281,12 @@ void apply_cal_data(int *cal_data)
 		back_y = TS_KEY_Y; 
 	}
 	
-	printk("[SWIFT TOUCH CAL] X1:%d, Y1:%d\n", x1, y1);  
-	printk("[SWIFT TOUCH CAL] X2:%d, Y2:%d\n", x2, y2);  
-	printk("[SWIFT TOUCH CAL] X3:%d, Y3:%d\n", x3, y3);  
-	printk("[SWIFT TOUCH CAL] X4:%d, Y4:%d\n", x4, y4);  
-	printk("[SWIFT TOUCH CAL] MENU X:%d, MENU Y:%d\n", menu_x, menu_y);  
-	printk("[SWIFT TOUCH CAL] BACK X:%d, BACk Y:%d\n", back_x, back_y); 
+	pr_info("[SWIFT TOUCH CAL] X1:%d, Y1:%d\n", x1, y1);  
+	pr_info("[SWIFT TOUCH CAL] X2:%d, Y2:%d\n", x2, y2);  
+	pr_info("[SWIFT TOUCH CAL] X3:%d, Y3:%d\n", x3, y3);  
+	pr_info("[SWIFT TOUCH CAL] X4:%d, Y4:%d\n", x4, y4);  
+	pr_info("[SWIFT TOUCH CAL] MENU X:%d, MENU Y:%d\n", menu_x, menu_y);  
+	pr_info("[SWIFT TOUCH CAL] BACK X:%d, BACk Y:%d\n", back_x, back_y); 
 
 }
 static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int cmd,unsigned long arg)
@@ -292,7 +296,7 @@ static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int 
 	int current_cal_mode = 0;
 	int i, idx;
 
-	printk("[touch_cal_ioctl]cmd[%d]\n", cmd); 
+	pr_info("[touch_cal_ioctl]cmd[%d]\n", cmd); 
 
 	switch (cmd) {
 	case TOUCH_CAL_GET_DATA:
@@ -300,13 +304,13 @@ static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int 
 		{
 			idx = i;
 			msm_proc_comm(PCOM_OEM_GET_TOUCH_CAL, &cal_data[i], &idx);		
-			printk("### get cal_data[%d]:%d\n", i, cal_data[i]); 			
+			pr_info("### get cal_data[%d]:%d\n", i, cal_data[i]); 			
 		}
 		apply_cal_data(cal_data);
 		break;
 	case TOUCH_CAL_SET_DATA:
 
-		printk("[touch_cal_ioctl]TOUCH_CAL_SET_DATA\n"); 
+		pr_info("[touch_cal_ioctl]TOUCH_CAL_SET_DATA\n"); 
 
 		ts_calibration_for_touch_key_region(TOUCH_KEY_FILENAME, cal_data);
 
@@ -321,7 +325,7 @@ static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int 
 			idx = i;
 			msm_proc_comm(PCOM_OEM_SET_TOUCH_CAL, &cal_data[i], &idx);		
 			
-			printk("[SWIFT TOUCH CAL](%d) cal_data:%d\n", i, idx); 
+			pr_info("[SWIFT TOUCH CAL](%d) cal_data:%d\n", i, idx); 
 		}
 
 		apply_cal_data(cal_data);
@@ -484,25 +488,25 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id)
 		ly = 3300 - y_prime;  /* 10bit : 827  12bit : 3300 */
 
 		if (msm_tsdebug & 1)
-			printk("++++++++x=%d, y=%d++++++++\n", lx, ly);
+			pr_info("++++++++x=%d, y=%d++++++++\n", lx, ly);
 
 		if ((lx  <  menu_x) && (ly > menu_y)) {
 
 			if (msm_tsdebug & 1)
-				printk("Home key : x=%d, y=%d\n", lx, ly);
+				pr_info("Home key : x=%d, y=%d\n", lx, ly);
 			
 			if (ts->keypad == 0) {
-				printk("input report HOME key\n");
+				pr_info("input report HOME key\n");
 				input_report_key(ts->input, KEY_HOME, 1);
 				ts->keypad = KEY_HOME;
 			}
  
 		} else if ((lx > back_x) && (ly > back_y)) {
 			if (msm_tsdebug & 1)
-				printk("Back key : x=%d, y=%d\n", lx, ly);
+				pr_info("Back key : x=%d, y=%d\n", lx, ly);
 
 			if (ts->keypad == 0) {
-				printk("input report BACK key\n");
+				pr_info("input report BACK key\n");
 				input_report_key(ts->input, KEY_BACK, 1);
 				ts->keypad = KEY_BACK;
 				ts_key_event = 1;
@@ -520,7 +524,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id)
 		mod_timer(&ts->timer, jiffies + msecs_to_jiffies(TS_PENUP_TIMEOUT_MS));
 
 	} else
-		printk(KERN_INFO "Ignored interrupt: {%3d, %3d},"
+		pr_info("Ignored interrupt: {%3d, %3d},"
 				" op = %3d samp = %3d\n",
 				x, y, num_op, num_samp);
 
@@ -628,12 +632,12 @@ static int __devinit ts_probe(struct platform_device *pdev)
 #if defined(TS_KEY_CALMODE)
 	res = misc_register(&touch_cal_misc_device);
 	if (res) {
-		printk(KERN_ERR"heaven_motion_misc_device register failed\n");
+		pr_err("heaven_motion_misc_device register failed\n");
 		goto fail_misc_device_register_failed;
 	}  
 
-	printk("[SWIFT TOUCH CAL-PROBE] MenuKey X: %d, MENUKey y: %d\n", menu_x, menu_y); 
-	printk("[SWIFT TOUCH CAL-PROBE] BACKKey X: %d, BACKKey y: %d\n", back_x, back_y); 
+	pr_info("[SWIFT TOUCH CAL-PROBE] MenuKey X: %d, MENUKey y: %d\n", menu_x, menu_y); 
+	pr_info("[SWIFT TOUCH CAL-PROBE] BACKKey X: %d, BACKKey y: %d\n", back_x, back_y); 
 #endif
 
 	return 0;
