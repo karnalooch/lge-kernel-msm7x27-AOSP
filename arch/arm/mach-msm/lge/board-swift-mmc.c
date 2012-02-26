@@ -35,14 +35,14 @@ static void sdcc_gpio_init(void)
 	int rc = 0;
 	if (gpio_request(GPIO_SD_DETECT_N, "sdc1_status_pin_irq"))
 		pr_err("failed to request gpio sdc1_status_irq\n");
-	rc = gpio_tlmm_config(GPIO_CFG(GPIO_SD_DETECT_N, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,
+	rc = gpio_tlmm_config(GPIO_CFG(GPIO_SD_DETECT_N, 0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
 									GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc)
 		pr_err("%s: Failed to configure GPIO_SD_DETECT %d\n",
 					__func__, rc);
 	if (gpio_request(GPIO_MMC_COVER_DETECT, "sdc1_status_socket_irq"))
 		pr_err("failed to request gpio sdc1_status_irq\n");
-	rc = gpio_tlmm_config(GPIO_CFG(GPIO_MMC_COVER_DETECT, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,
+	rc = gpio_tlmm_config(GPIO_CFG(GPIO_MMC_COVER_DETECT, 0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
 								   GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	if (rc)
 		pr_err("%s: Failed to configure GPIO_MMC_COVER_DETECT %d\n",
@@ -261,7 +261,7 @@ static struct mmc_platform_data bcm432x_sdcc_wlan_data = {
 
 static void __init msm7x2x_init_mmc(void)
 {
-	vreg_mmc = vreg_get(NULL, "wlan");
+	vreg_mmc = vreg_get(NULL, "mmc");
 	if (IS_ERR(vreg_mmc)) {
 		pr_err("%s: vreg get failed (%ld)\n",
 			__func__, PTR_ERR(vreg_mmc));
@@ -277,15 +277,12 @@ static void __init msm7x2x_init_mmc(void)
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 	/* GPIO config */
 	gpio_tlmm_config(GPIO_CFG(CONFIG_BCM4325_GPIO_WL_REGON, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	gpio_configure(CONFIG_BCM4325_GPIO_WL_REGON, GPIOF_DRIVE_OUTPUT);
 	gpio_set_value(CONFIG_BCM4325_GPIO_WL_REGON, 0);
 	
 	gpio_tlmm_config(GPIO_CFG(CONFIG_BCM4325_GPIO_WL_RESET, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-	gpio_configure(CONFIG_BCM4325_GPIO_WL_RESET, GPIOF_DRIVE_OUTPUT);
 	gpio_set_value(CONFIG_BCM4325_GPIO_WL_RESET, 0);
 	
 	gpio_tlmm_config(GPIO_CFG(CONFIG_BCM4325_GPIO_WL_HOSTWAKEUP, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-//	gpio_configure(CONFIG_BCM4325_GPIO_WL_HOSTWAKEUP, GPIOF_INPUT);
 
 	/* Register platform device */
 	msm_add_sdcc(2, &bcm432x_sdcc_wlan_data);
