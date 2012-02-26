@@ -92,7 +92,7 @@ static struct msm_panel_samsung_pdata mddi_samsung_panel_data = {
 };
 
 static struct platform_device mddi_samsung_panel_device = {
-        .name   = "mddi_samsung_innotek_hvga",
+        .name   = "mddi_samsung",
         .id     = 0,
         .dev    = {
                 .platform_data = &mddi_samsung_panel_data,
