@@ -75,9 +75,9 @@
 #define TSSC_NUMBER_OF_OPERATIONS 2
 #define TSSC_SI_STATE 8     
 
-#define TS_PENUP_TIMEOUT_MS 15 /* 100 */
+#define TS_PENUP_TIMEOUT_MS 30 /* 100 */
 
-#define TS_DRIVER_NAME "swift_touchscreen"
+#define TS_DRIVER_NAME "msm_touchscreen"
 
 #define TS_KEY_CALMODE
 
