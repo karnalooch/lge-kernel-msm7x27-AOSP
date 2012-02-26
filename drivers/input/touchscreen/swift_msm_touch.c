@@ -13,7 +13,6 @@
  *
  */
 
-
 #include <asm/mach-types.h>
 #include <asm/uaccess.h>
 
@@ -88,9 +87,11 @@
 #define Y_MIN   	   0 /* Rev.C:   15 Rev.B:   70 */
 #define MENU_KEY_X  1220 /* Rev1: 1180 Rev.C: 1150 Rev.B: 1200 */
 #define BACK_KEY_X  2840 /* Rev1: 2880 Rev.C: 2965 Rev.B: 2880 */
-#define TS_KEY_Y	2600 
+#define TS_KEY_Y    2600 
 
 #define P_MAX	256
+
+#define TSSC_REG(reg) (virt + TSSC_##reg##_REG)
 
 static int PreRejectTouchCount = 0;
 static int preRejectValue = 2;
@@ -116,7 +117,6 @@ static int TouchWindowPress = 1;
 int ts_key_event;
 
 static void __iomem *virt;
-#define TSSC_REG(reg) (virt + TSSC_##reg##_REG)
 
 static int menu_x = MENU_KEY_X;
 static int menu_y = TS_KEY_Y; 
@@ -127,14 +127,14 @@ static int back_y = TS_KEY_Y;
 
 #define TOUCH_KEY_FILENAME "/data/nv/tskey_cal"
 
-int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
-{
+int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
+
 	int fd, err = 0;
 	int count, i,j,ii, count1 = 0;
 	int cal_data_count = 0;
 
-	char data1[50]= {0,};
-	char data2[10]={0,};
+	char data1[50]= {0, };
+	char data2[10]= {0, };
 	int  value = 0, value1 = 0;
 	mm_segment_t old_fs = get_fs();
 
@@ -164,13 +164,13 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
 	(unsigned)sys_read(fd, (char *)data1, count);
 
 	count1 = 0;
-	for(i =0 ; i < count ; i++){
+	for(i =0 ; i < count ; i++) {
 		//pr_info("data[%d]=0x%x\n",i,data1[i]);
-		if((data1[i]== 0x2C)||(data1[i]== 0x0D)||data1[i]== 0x0A){
+		if((data1[i]== 0x2C) || (data1[i]== 0x0D) || data1[i]== 0x0A) {
 			ii = 0;
 			value = 0;
 
-			while(count1 > 0){
+			while(count1 > 0) {
 				count1-=1;
 
 				for(j=0, value1=1; j < count1 ; j++)
@@ -190,7 +190,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data)
 			memset(data2,0x00,sizeof(data2));
 			count1 = 0;
 		}
-		else{
+		else {
 			data2[count1]= data1[i];
 			//pr_info("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i);
 			count1+=1;     
@@ -212,7 +212,7 @@ err_close_file:
 }
 
 /*  ---------------------------------------------------------------------------*/	 
-/*	 						 ioctl command API                                 */
+/*  ioctl command API                                                          */
 /*  ---------------------------------------------------------------------------*/	 
 #define TOUCH_CAL_IOC_MAGIC	  0xA1
 	 
@@ -220,21 +220,22 @@ err_close_file:
 #define TOUCH_CAL_TOUCH_KEY_MODE   _IOWR(TOUCH_CAL_IOC_MAGIC, 0x02, int)
 
 #define TOUCH_CAL_GET_DATA   	   _IOWR(TOUCH_CAL_IOC_MAGIC, 0x03, int[8])
-static int touch_cal_open(struct inode *inode, struct file *file)
-{	   
+static int touch_cal_open(struct inode *inode, struct file *file) {
+	   
 	 int status = 0;
 
 	 pr_info("touch_cal_open\n"); 	 
 	 return status;
 }
 
-static int touch_cal_release(struct inode *inode, struct file *file)
-{
+static int touch_cal_release(struct inode *inode, struct file *file) {
+
 	 pr_info("touch_release\n"); 	 
 	 return 0;
 }
-void apply_cal_data(int *cal_data)
-{
+
+void apply_cal_data(int *cal_data) {
+
 	int x1 = 0, y1 = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0, x4 = 0, y4 = 0;
 
 	if (cal_data[0]) {
@@ -289,10 +290,11 @@ void apply_cal_data(int *cal_data)
 	pr_info("[SWIFT TOUCH CAL] BACK X:%d, BACk Y:%d\n", back_x, back_y); 
 
 }
-static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int cmd,unsigned long arg)
-{
+
+static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int cmd,unsigned long arg) {
+
 	/*void __user *argp = (void __user *)arg;*/
-	int cal_data[8] = {0,};
+	int cal_data[8] = {0, };
 	/* int current_cal_mode = 0; */
 	int i, idx;
 
@@ -350,15 +352,15 @@ static struct miscdevice touch_cal_misc_device = {
 };
 #endif
 
-static int ts_check_region(struct ts *ts, int x, int y, int pressure)
-{
+static int ts_check_region(struct ts *ts, int x, int y, int pressure) {
+
     int update_event = false;
 	int x_axis, y_axis;
 	int x_diff, y_diff;
 	x_axis = x;
 	y_axis = y;
 
-	if (ts->count == 0){
+	if (ts->count == 0) {
 		ts->x_lastpt = x_axis;
 		ts->y_lastpt = y_axis;
 
@@ -375,7 +377,7 @@ static int ts_check_region(struct ts *ts, int x, int y, int pressure)
         y_diff = y_diff * -1;
 
 
-    if ((x_diff < 40) && (y_diff < 40)){
+    if ((x_diff < 40) && (y_diff < 40)) {
         x_axis = ts->x_lastpt;
         y_axis = ts->y_lastpt;
     } else {
@@ -392,8 +394,8 @@ static int ts_check_region(struct ts *ts, int x, int y, int pressure)
     return update_event;
 }
 
-static void ts_update_pen_state(struct ts *ts, int x, int y, int pressure)
-{
+static void ts_update_pen_state(struct ts *ts, int x, int y, int pressure) {
+
 	if (pressure) {
 		if (ts_check_region(ts, x, y, pressure) == false)
 				  return;
@@ -414,14 +416,14 @@ static void ts_update_pen_state(struct ts *ts, int x, int y, int pressure)
 	}
 }
 
-static void ts_timer(unsigned long arg)
-{
+static void ts_timer(unsigned long arg) {
+
 	struct ts *ts = (struct ts *)arg;
 
 	ts->count = 0;
 	input_report_abs(ts->input, ABS_PRESSURE, 0);
 	input_report_key(ts->input, BTN_TOUCH, 0);
-    input_sync(ts->input);
+	input_sync(ts->input);
 
 	TouchWindowPress = 0;
 	PreRejectTouchCount =0; 
@@ -439,8 +441,8 @@ static void ts_timer(unsigned long arg)
 
 }
 
-static irqreturn_t ts_interrupt(int irq, void *dev_id)
-{
+static irqreturn_t ts_interrupt(int irq, void *dev_id) {
+
 	u32 avgs, x, y, lx, ly, x_prime, y_prime;
 	u32 num_op, num_samp;
 	u32 status;
@@ -461,7 +463,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id)
 
 	/* Data has been read, OK to clear the data flag */
 	writel(TSSC_CTL_STATE, TSSC_REG(CTL));
-    writel(TSSC_SI_STATE, TSSC_REG(SI));
+	writel(TSSC_SI_STATE, TSSC_REG(SI));
 
 	/* Valid samples are indicated by the sample number in the status
 	 * register being the number of expected samples and the number of
@@ -532,8 +534,8 @@ out:
 		return IRQ_HANDLED;
 }
 
-static int __devinit ts_probe(struct platform_device *pdev)
-{
+static int __devinit ts_probe(struct platform_device *pdev) {
+
 	int result;
 	struct input_dev *input_dev;
 	struct resource *res, *ioarea;
@@ -593,7 +595,7 @@ static int __devinit ts_probe(struct platform_device *pdev)
 	input_dev->absbit[BIT_WORD(ABS_MISC)] = BIT_MASK(ABS_MISC);
 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 
-    set_bit(KEY_HOME, input_dev->keybit); 
+	set_bit(KEY_HOME, input_dev->keybit); 
 	set_bit(KEY_BACK, input_dev->keybit);
 
     if (pdata) {
@@ -658,8 +660,8 @@ fail_misc_device_register_failed:
 	return result;
 }
 
-static int __devexit ts_remove(struct platform_device *pdev)
-{
+static int __devexit ts_remove(struct platform_device *pdev) {
+
 	struct resource *res;
 	struct ts *ts = platform_get_drvdata(pdev);
 
@@ -685,14 +687,14 @@ static struct platform_driver ts_driver = {
 	},
 };
  
-static int __init ts_init(void)
-{
+static int __init ts_init(void) {
+
 	return platform_driver_register(&ts_driver);
 }
 module_init(ts_init);
 
-static void __exit ts_exit(void)
-{
+static void __exit ts_exit(void) {
+
 	platform_driver_unregister(&ts_driver);
 }
 module_exit(ts_exit);
