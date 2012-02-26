@@ -1,4 +1,4 @@
-/* kernel/arch/arm/mach-msm/swift/board-swift-msm-touch.c
+/* drivers/input/touchscreen/swift_msm_touch.c
  *
  * Copyright (c) 2008-2009, Code Aurora Forum. All rights reserved.
  *
