@@ -12,6 +12,9 @@
  * GNU General Public License for more details.
  */
 
+#include <asm/mach/mmc.h>
+#include <asm/mach-types.h>
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/platform_device.h>
@@ -22,15 +25,14 @@
 #include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/interrupt.h>
-#include <asm/mach/mmc.h>
-#include <asm/mach-types.h>
+
 #include <mach/vreg.h>
 #include <mach/mpp.h>
 #include <mach/board.h>
+
 #include "board-swift.h"
 
-static void sdcc_gpio_init(void)
-{
+static void sdcc_gpio_init(void) {
 #ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
 	int rc = 0;
 	if (gpio_request(GPIO_SD_DETECT_N, "sdc1_status_pin_irq"))
@@ -156,8 +158,8 @@ static unsigned sdcc_cfg_data[][6] = {
 static unsigned long vreg_sts, gpio_sts;
 static struct vreg *vreg_mmc;
 
-static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
-{
+static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable) {
+
 	int i, rc;
 
 	if (!(test_bit(dev_id, &gpio_sts)^enable))
@@ -177,8 +179,8 @@ static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 	}
 }
 
-static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
-{
+static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd) {
+
 	int rc = 0;
 	struct platform_device *pdev;
 
@@ -213,8 +215,8 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 	return 0;
 }
 
-static unsigned int swift_sdcc_slot_status(struct device *dev)
-{
+static unsigned int swift_sdcc_slot_status(struct device *dev) {
+
 	return !(gpio_get_value(GPIO_MMC_COVER_DETECT) || gpio_get_value(GPIO_SD_DETECT_N));
 }
 
@@ -238,8 +240,8 @@ static struct mmc_platform_data msm7x2x_sdc1_data = {
 
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, BCM4325 control gpio */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
-static unsigned int bcm432x_sdcc_wlan_slot_status(struct device *dev)
-{
+static unsigned int bcm432x_sdcc_wlan_slot_status(struct device *dev) {
+
 	pr_err("%s: %d %d\n", __func__, CONFIG_BCM4325_GPIO_WL_RESET, gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET));
 	return gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET);
 }
@@ -259,8 +261,8 @@ static struct mmc_platform_data bcm432x_sdcc_wlan_data = {
 #endif  /* CONFIG_LGE_BCM432X_PATCH*/
 /* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, BCM4325 control gpio */
 
-static void __init msm7x2x_init_mmc(void)
-{
+static void __init msm7x2x_init_mmc(void) {
+
 	vreg_mmc = vreg_get(NULL, "mmc");
 	if (IS_ERR(vreg_mmc)) {
 		pr_err("%s: vreg get failed (%ld)\n",
@@ -295,7 +297,7 @@ static void __init msm7x2x_init_mmc(void)
 #define msm7x2x_init_mmc() do {} while (0)
 #endif
 
-void __init lge_add_mmc_devices(void)
-{
+void __init lge_add_mmc_devices(void) {
+
 	msm7x2x_init_mmc();
 }
