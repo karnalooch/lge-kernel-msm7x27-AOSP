@@ -75,7 +75,7 @@ static unsigned int keypad_row_gpios[] = { 37, 38, 39 };
 
 #define KEY_FOCUS 242
 
-static const unsigned short keypad_keymap_thunder[ARRAY_SIZE(keypad_col_gpios) * ARRAY_SIZE(keypad_row_gpios)] = {
+static const unsigned short keypad_keymap_swift[ARRAY_SIZE(keypad_col_gpios) * ARRAY_SIZE(keypad_row_gpios)] = {
 	[KEYMAP_INDEX(0, 0)] = KEY_VOLUMEUP, 
 	[KEYMAP_INDEX(0, 1)] = KEY_VOLUMEDOWN, 
 	[KEYMAP_INDEX(1, 0)] = KEY_FOCUS, 
@@ -92,7 +92,7 @@ static const unsigned short keypad_virtual_keys[] = {
 
 static struct input_dev *keypad_dev;
 
-int thunderg_matrix_info_wrapper(struct input_dev *input_dev,struct gpio_event_info *info, void **data, int func)
+int swift_matrix_info_wrapper(struct input_dev *input_dev,struct gpio_event_info *info, void **data, int func)
 {
         int ret;
 	int i;
@@ -115,7 +115,7 @@ int thunderg_matrix_info_wrapper(struct input_dev *input_dev,struct gpio_event_i
         return ret;
 }
 
-static int thunderg_gpio_matrix_power(
+static int swift_gpio_matrix_power(
                 const struct gpio_event_platform_data *pdata, bool on)
 {
 	/* this is dummy function to make gpio_event driver register suspend function
@@ -127,9 +127,9 @@ static int thunderg_gpio_matrix_power(
 	return 0;
 }
 
-static struct gpio_event_matrix_info thunder_keypad_matrix_info = {
-	.info.func	= thunderg_matrix_info_wrapper,
-	.keymap		= keypad_keymap_thunder,
+static struct gpio_event_matrix_info swift_keypad_matrix_info = {
+	.info.func	= swift_matrix_info_wrapper,
+	.keymap		= keypad_keymap_swift,
 	.output_gpios	= keypad_col_gpios,
 	.input_gpios	= keypad_row_gpios,
 	.noutputs	= ARRAY_SIZE(keypad_col_gpios),
@@ -140,33 +140,33 @@ static struct gpio_event_matrix_info thunder_keypad_matrix_info = {
 };
 
 
-static struct gpio_event_info *thunder_keypad_info[] = {
-	&thunder_keypad_matrix_info.info
+static struct gpio_event_info *swift_keypad_info[] = {
+	&swift_keypad_matrix_info.info
 };
 
-static struct gpio_event_platform_data thunder_keypad_data = {
+static struct gpio_event_platform_data swift_keypad_data = {
 	.name		= "swift_keypad",
-	.info		= thunder_keypad_info,
-	.info_count	= ARRAY_SIZE(thunder_keypad_info),
-	.power          = thunderg_gpio_matrix_power,
+	.info		= swift_keypad_info,
+	.info_count	= ARRAY_SIZE(swift_keypad_info),
+	.power          = swift_gpio_matrix_power,
 };
 
-struct platform_device keypad_device_thunder= {
+struct platform_device keypad_device_swift= {
 	.name	= GPIO_EVENT_DEV_NAME,
 	.id	= 0,
 	.dev	= {
-		.platform_data	= &thunder_keypad_data,
+		.platform_data	= &swift_keypad_data,
 	},
 };
 
 /* keyreset platform device */
-static int thunderg_reset_keys_up[] = {
+static int swift_reset_keys_up[] = {
 	KEY_HOME,
 	0
 };
 
-static struct keyreset_platform_data thunderg_reset_keys_pdata = {
-	.keys_up = thunderg_reset_keys_up,
+static struct keyreset_platform_data swift_reset_keys_pdata = {
+	.keys_up = swift_reset_keys_up,
 	.keys_down = {
 		//KEY_BACK,
 		KEY_VOLUMEDOWN,
@@ -175,16 +175,16 @@ static struct keyreset_platform_data thunderg_reset_keys_pdata = {
 	},
 };
 
-struct platform_device thunderg_reset_keys_device = {
+struct platform_device swift_reset_keys_device = {
 	.name = KEYRESET_NAME,
-	.dev.platform_data = &thunderg_reset_keys_pdata,
+	.dev.platform_data = &swift_reset_keys_pdata,
 };
 
 /* input platform device */
-static struct platform_device *thunderg_input_devices[] __initdata = {
+static struct platform_device *swift_input_devices[] __initdata = {
 	&hs_device,
-	&keypad_device_thunder,
-	//&thunderg_reset_keys_device,
+	&keypad_device_swift,
+	//&swift_reset_keys_device,
 	&atcmd_virtual_device,
 };
 
@@ -231,7 +231,7 @@ static struct i2c_board_info accel_i2c_bdinfo[] = {
 	}
 };
 
-static void __init thunderg_init_i2c_acceleration(int bus_num)
+static void __init swift_init_i2c_acceleration(int bus_num)
 {
 	accel_i2c_device.id = bus_num;
 
@@ -282,7 +282,7 @@ static struct i2c_board_info ecom_i2c_bdinfo[] = {
 	}
 };
 
-static void __init thunderg_init_i2c_ecompass(int bus_num)
+static void __init swift_init_i2c_ecompass(int bus_num)
 {
 	ecom_i2c_device.id = bus_num;
 
@@ -295,8 +295,8 @@ static void __init thunderg_init_i2c_ecompass(int bus_num)
 /* common function */
 void __init lge_add_input_devices(void)
 {
-	platform_add_devices(thunderg_input_devices, ARRAY_SIZE(thunderg_input_devices));
+	platform_add_devices(swift_input_devices, ARRAY_SIZE(swift_input_devices));
 
-	lge_add_gpio_i2c_device(thunderg_init_i2c_acceleration);
-	lge_add_gpio_i2c_device(thunderg_init_i2c_ecompass);
+	lge_add_gpio_i2c_device(swift_init_i2c_acceleration);
+	lge_add_gpio_i2c_device(swift_init_i2c_ecompass);
 }
