@@ -24,8 +24,6 @@
 #include <linux/delay.h>
 #include <linux/bootmem.h>
 #include <linux/power_supply.h>
-#include <linux/rt9393_bl.h>
-
 
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
