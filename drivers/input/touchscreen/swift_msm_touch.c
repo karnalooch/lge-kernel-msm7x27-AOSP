@@ -291,9 +291,9 @@ void apply_cal_data(int *cal_data)
 }
 static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int cmd,unsigned long arg)
 {
-	void __user *argp = (void __user *)arg;
+	/*void __user *argp = (void __user *)arg;*/
 	int cal_data[8] = {0,};
-	int current_cal_mode = 0;
+	/* int current_cal_mode = 0; */
 	int i, idx;
 
 	pr_info("[touch_cal_ioctl]cmd[%d]\n", cmd); 
@@ -630,8 +630,8 @@ static int __devinit ts_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, ts);
 
 #if defined(TS_KEY_CALMODE)
-	res = misc_register(&touch_cal_misc_device);
-	if (res) {
+	result = misc_register(&touch_cal_misc_device);
+	if (result) {
 		pr_err("heaven_motion_misc_device register failed\n");
 		goto fail_misc_device_register_failed;
 	}  
