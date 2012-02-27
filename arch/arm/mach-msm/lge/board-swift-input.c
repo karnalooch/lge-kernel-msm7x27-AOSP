@@ -47,7 +47,7 @@ static struct atcmd_virtual_platform_data atcmd_virtual_pdata = {
 
 static struct platform_device atcmd_virtual_device = {
 	.name = "atcmd_virtual_kbd",
-	.id = 0,
+	.id = -1,
 	.dev = {
 		.platform_data = &atcmd_virtual_pdata,
 	},
@@ -62,16 +62,16 @@ static struct msm_handset_platform_data hs_platform_data = {
 
 static struct platform_device hs_device = {
 	.name   = "msm-handset",
-	.id     = 0,
+	.id     = -1,
 	.dev    = {
 		.platform_data = &hs_platform_data,
 	},
 };
 
-static unsigned int keypad_col_gpios[] = { 34, 35, 36 };
-static unsigned int keypad_row_gpios[] = { 37, 38, 39 };
+static unsigned int keypad_row_gpios[] = { 34, 35, 36 };
+static unsigned int keypad_col_gpios[] = { 37, 38, 39 };
 
-#define KEYMAP_INDEX(col, row) ((col)*ARRAY_SIZE(keypad_col_gpios) + (row))
+#define KEYMAP_INDEX(row, col) ((row)*ARRAY_SIZE(keypad_col_gpios) + (col))
 
 #define KEY_FOCUS 242
 
@@ -90,24 +90,27 @@ static const unsigned short keypad_virtual_keys[] = {
 	KEY_POWER //116
 };
 
-static struct input_dev *keypad_dev;
 
-int swift_matrix_info_wrapper(struct input_dev *input_dev,struct gpio_event_info *info, void **data, int func)
+static struct gpio_event_input_devs *keypad_dev;
+
+int swift_matrix_info_wrapper(struct gpio_event_input_devs *gpio_input_devs,struct gpio_event_info *info, void **data, int func)
 {
         int ret;
 	int i;
 
+        pr_info("%s: func is %d", __func__, func);
 	if (func == GPIO_EVENT_FUNC_RESUME) {
 		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[0], 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[1], 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,GPIO_CFG_2MA), GPIO_CFG_ENABLE);
 	}
 
-	ret = gpio_event_matrix_func(input_dev, info, data,func);
+	ret = gpio_event_matrix_func(gpio_input_devs, info, data, func);
 
 	if (func == GPIO_EVENT_FUNC_INIT && !ret) {
-		keypad_dev = input_dev;
+		keypad_dev = gpio_input_devs;
 		for (i = 0; i < ARRAY_SIZE(keypad_virtual_keys); i++)
-			set_bit(keypad_virtual_keys[i] & KEY_MAX, input_dev->keybit);
+			pr_info("%s: i is %d", __func__, i);
+			set_bit(keypad_virtual_keys[i] & KEY_MAX, gpio_input_devs->dev[0]->keybit);
 	} else if (func == GPIO_EVENT_FUNC_UNINIT) {
 		keypad_dev = NULL;
 	}
@@ -130,13 +133,13 @@ static int swift_gpio_matrix_power(
 static struct gpio_event_matrix_info swift_keypad_matrix_info = {
 	.info.func	= swift_matrix_info_wrapper,
 	.keymap		= keypad_keymap_swift,
-	.output_gpios	= keypad_col_gpios,
-	.input_gpios	= keypad_row_gpios,
-	.noutputs	= ARRAY_SIZE(keypad_col_gpios),
-	.ninputs	= ARRAY_SIZE(keypad_row_gpios),
+	.output_gpios	= keypad_row_gpios,
+	.input_gpios	= keypad_col_gpios,
+	.noutputs	= ARRAY_SIZE(keypad_row_gpios),
+	.ninputs	= ARRAY_SIZE(keypad_col_gpios),
 	.settle_time.tv.nsec = 40 * NSEC_PER_USEC,
 	.poll_time.tv.nsec = 20 * NSEC_PER_MSEC,
-	.flags		= GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_DRIVE_INACTIVE | GPIOKPF_PRINT_UNMAPPED_KEYS
+	.flags		= GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_PRINT_UNMAPPED_KEYS | GPIOKPF_DRIVE_INACTIVE
 };
 
 
@@ -153,7 +156,7 @@ static struct gpio_event_platform_data swift_keypad_data = {
 
 struct platform_device keypad_device_swift= {
 	.name	= GPIO_EVENT_DEV_NAME,
-	.id	= 0,
+	.id	= -1,
 	.dev	= {
 		.platform_data	= &swift_keypad_data,
 	},
@@ -188,9 +191,10 @@ static struct platform_device *swift_input_devices[] __initdata = {
 	&atcmd_virtual_device,
 };
 
+
 struct input_dev *msm_keypad_get_input_dev(void)
 {
-	return keypad_dev;
+	return keypad_dev->dev[0];
 }
 
 /* acceleration */
