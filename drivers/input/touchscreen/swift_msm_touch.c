@@ -73,7 +73,7 @@
 		TSSC_CTL_EN)
 
 #define TSSC_NUMBER_OF_OPERATIONS 2
-#define TSSC_SI_STATE 8     
+#define TSSC_SI_STATE 8
 
 #define TS_PENUP_TIMEOUT_MS 30 /* 100 */
 
@@ -85,9 +85,12 @@
 #define Y_MAX 		2555 /* Rev.C: 2550 Rev.B: 2480 */
 #define X_MIN 		1267 /* Rev.C: 1195 Rev.B: 1290 */
 #define Y_MIN   	   0 /* Rev.C:   15 Rev.B:   70 */
-#define MENU_KEY_X  1220 /* Rev1: 1180 Rev.C: 1150 Rev.B: 1200 */
-#define BACK_KEY_X  2840 /* Rev1: 2880 Rev.C: 2965 Rev.B: 2880 */
-#define TS_KEY_Y    2600 
+#define LEFT_KEY_X  1220 /* Rev1: 1180 Rev.C: 1150 Rev.B: 1200 */
+#define RIGHT_KEY_X  2840 /* Rev1: 2880 Rev.C: 2965 Rev.B: 2880 */
+#define TS_KEY_Y    2600
+
+#define LEFT_KEY KEY_MENU
+#define RIGHT_KEY KEY_BACK
 
 #define P_MAX	256
 
@@ -105,23 +108,26 @@ struct ts {
 	int irq;
 	unsigned int x_max;
 	unsigned int y_max;
-	
+
 	unsigned int count;
 	int x_lastpt;
-	int y_lastpt;    
-	
+	int y_lastpt;
+
 	u8 keypad;
 };
 
-static int TouchWindowPress = 1; 
+static int TouchWindowPress = 1;
 int ts_key_event;
 
 static void __iomem *virt;
 
-static int menu_x = MENU_KEY_X;
-static int menu_y = TS_KEY_Y; 
-static int back_x = BACK_KEY_X;
-static int back_y = TS_KEY_Y; 
+static int left_x = LEFT_KEY_X;
+static int left_y = TS_KEY_Y;
+static int right_x = RIGHT_KEY_X;
+static int right_y = TS_KEY_Y;
+
+static const char* leftkeyname = "MenuKey";
+static const char* rightkeyname = "BackKey";
 
 #if defined(TS_KEY_CALMODE)
 
@@ -185,7 +191,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 				}
 
 				ii++;
-			} 
+			}
 
 			memset(data2,0x00,sizeof(data2));
 			count1 = 0;
@@ -193,8 +199,8 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 		else {
 			data2[count1]= data1[i];
 			/* pr_info("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i); */
-			count1+=1;     
-		} 
+			count1+=1;
+		}
 	}
 
 	pr_info("[SWIFT]TS_CAL. sys_close........\n");
@@ -211,26 +217,26 @@ err_close_file:
 
 }
 
-/*  ---------------------------------------------------------------------------*/	 
+/*  ---------------------------------------------------------------------------*/
 /*  ioctl command API                                                          */
-/*  ---------------------------------------------------------------------------*/	 
+/*  ---------------------------------------------------------------------------*/
 #define TOUCH_CAL_IOC_MAGIC	  0xA1
-	 
+
 #define TOUCH_CAL_SET_DATA   	   _IOWR(TOUCH_CAL_IOC_MAGIC, 0x01, int[8])
 #define TOUCH_CAL_TOUCH_KEY_MODE   _IOWR(TOUCH_CAL_IOC_MAGIC, 0x02, int)
 
 #define TOUCH_CAL_GET_DATA   	   _IOWR(TOUCH_CAL_IOC_MAGIC, 0x03, int[8])
 static int touch_cal_open(struct inode *inode, struct file *file) {
-	   
+
 	 int status = 0;
 
-	 pr_debug("touch_cal_open\n"); 	 
+	 pr_debug("touch_cal_open\n");
 	 return status;
 }
 
 static int touch_cal_release(struct inode *inode, struct file *file) {
 
-	 pr_debug("touch_release\n"); 	 
+	 pr_debug("touch_release\n");
 	 return 0;
 }
 
@@ -241,53 +247,53 @@ void apply_cal_data(int *cal_data) {
 	if (cal_data[0]) {
 		x1 = (cal_data[0] * (X_MAX - X_MIN) / 320) + X_MIN;
 	}
-	
+
 	if (cal_data[1]) {
 		y1 = ((cal_data[1] + 20) * (Y_MAX - Y_MIN) / 450) + Y_MIN;
 	}
-	
+
 	if (cal_data[2]) {
 		x2 = (cal_data[2] * (X_MAX - X_MIN) / 320) + X_MIN;
 	}
-	
+
 	if (cal_data[3]) {
 		y2 = (cal_data[3] * (Y_MAX - Y_MIN) / 450) + Y_MIN;
 	}
-	
+
 	if (cal_data[4]) {
 		x3 = (cal_data[4] * (X_MAX - X_MIN) / 320) + X_MIN;
 	}
-	
+
 	if (cal_data[5]) {
 		y3 = (cal_data[5] * (Y_MAX - Y_MIN) / 450) + Y_MIN;
 	}
-	
+
 	if (cal_data[6]) {
 		x4 = (cal_data[6] * (X_MAX - X_MIN) / 320) + X_MIN;
 	}
-	
+
 	if (cal_data[7]) {
 		y4 = ((cal_data[7] + 20 )* (Y_MAX - Y_MIN) / 450) + Y_MIN;
 	}
-	
-	menu_x = x1 - ((x4 - x1) * 100 / 541);
-	menu_y = y2 + ((y2 - y1) * 100 / 841); /* 567 */
-	back_x = x4 + ((x4 - x1) * 100 / 541);
-	back_y = y3 + ((y3 - y4) * 100 / 841); /* 567 */
-	
-	if (!menu_x || !menu_y || !back_x || !back_y) {
-		menu_x = MENU_KEY_X;
-		menu_y = TS_KEY_Y; 
-		back_x = BACK_KEY_X;
-		back_y = TS_KEY_Y; 
+
+	left_x = x1 - ((x4 - x1) * 100 / 541);
+	left_y = y2 + ((y2 - y1) * 100 / 841); /* 567 */
+	right_x = x4 + ((x4 - x1) * 100 / 541);
+	right_y = y3 + ((y3 - y4) * 100 / 841); /* 567 */
+
+	if (!left_x || !right_y || !right_x || !right_y) {
+		left_x = LEFT_KEY_X;
+		left_y = TS_KEY_Y;
+		right_x = RIGHT_KEY_X;
+		right_y = TS_KEY_Y;
 	}
-	
-	pr_info("[SWIFT TOUCH CAL] X1:%d, Y1:%d\n", x1, y1);  
-	pr_info("[SWIFT TOUCH CAL] X2:%d, Y2:%d\n", x2, y2);  
-	pr_info("[SWIFT TOUCH CAL] X3:%d, Y3:%d\n", x3, y3);  
-	pr_info("[SWIFT TOUCH CAL] X4:%d, Y4:%d\n", x4, y4);  
-	pr_info("[SWIFT TOUCH CAL] MENU X:%d, MENU Y:%d\n", menu_x, menu_y);  
-	pr_info("[SWIFT TOUCH CAL] BACK X:%d, BACk Y:%d\n", back_x, back_y); 
+
+	pr_info("[SWIFT TOUCH CAL] X1:%d, Y1:%d\n", x1, y1);
+	pr_info("[SWIFT TOUCH CAL] X2:%d, Y2:%d\n", x2, y2);
+	pr_info("[SWIFT TOUCH CAL] X3:%d, Y3:%d\n", x3, y3);
+	pr_info("[SWIFT TOUCH CAL] X4:%d, Y4:%d\n", x4, y4);
+	pr_info("[SWIFT TOUCH CAL] %s X:%d, %s Y:%d\n", leftkeyname, left_x, leftkeyname, left_y);
+	pr_info("[SWIFT TOUCH CAL] %s X:%d, %s Y:%d\n", rightkeyname, right_x, rightkeyname, left_y);
 
 }
 
@@ -298,21 +304,21 @@ static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int 
 	/* int current_cal_mode = 0; */
 	int i, idx;
 
-	pr_info("[touch_cal_ioctl]cmd[%d]\n", cmd); 
+	pr_info("[touch_cal_ioctl]cmd[%d]\n", cmd);
 
 	switch (cmd) {
 	case TOUCH_CAL_GET_DATA:
 		for(i=0 ; i < 8 ; i++)
 		{
 			idx = i;
-			msm_proc_comm(PCOM_OEM_GET_TOUCH_CAL, &cal_data[i], &idx);		
-			pr_info("### get cal_data[%d]:%d\n", i, cal_data[i]); 			
+			msm_proc_comm(PCOM_OEM_GET_TOUCH_CAL, &cal_data[i], &idx);
+			pr_info("### get cal_data[%d]:%d\n", i, cal_data[i]);
 		}
 		apply_cal_data(cal_data);
 		break;
 	case TOUCH_CAL_SET_DATA:
 
-		pr_info("[touch_cal_ioctl]TOUCH_CAL_SET_DATA\n"); 
+		pr_info("[touch_cal_ioctl]TOUCH_CAL_SET_DATA\n");
 
 		ts_calibration_for_touch_key_region(TOUCH_KEY_FILENAME, cal_data);
 
@@ -325,9 +331,9 @@ static int touch_cal_ioctl(struct inode *inode, struct file *file, unsigned int 
 		for(i=0 ; i < 8 ; i++)
 		{
 			idx = i;
-			msm_proc_comm(PCOM_OEM_SET_TOUCH_CAL, &cal_data[i], &idx);		
-			
-			pr_info("[SWIFT TOUCH CAL](%d) cal_data:%d\n", i, idx); 
+			msm_proc_comm(PCOM_OEM_SET_TOUCH_CAL, &cal_data[i], &idx);
+
+			pr_info("[SWIFT TOUCH CAL](%d) cal_data:%d\n", i, idx);
 		}
 
 		apply_cal_data(cal_data);
@@ -367,29 +373,30 @@ static int ts_check_region(struct ts *ts, int x, int y, int pressure) {
         update_event = true;
 		TouchWindowPress = 1;
 		ts->count = ts->count + 1;
-	}	
-	
+	}
+
 	x_diff = x_axis - ts->x_lastpt;
 	if (x_diff < 0)
 		x_diff = x_diff * -1;
+
 	y_diff = y_axis - ts->y_lastpt;
-    if (y_diff < 0)
+	if (y_diff < 0)
         y_diff = y_diff * -1;
 
 
-    if ((x_diff < 40) && (y_diff < 40)) {
-        x_axis = ts->x_lastpt;
-        y_axis = ts->y_lastpt;
-    } else {
-        ts->x_lastpt = x_axis;
-        ts->y_lastpt = y_axis;
-	
-        x = x_axis;
-        y = y_axis;
+	if ((x_diff < 40) && (y_diff < 40)) {
+			x_axis = ts->x_lastpt;
+			y_axis = ts->y_lastpt;
+	} else {
+		ts->x_lastpt = x_axis;
+		ts->y_lastpt = y_axis;
 
-        update_event = true;
+		x = x_axis;
+		y = y_axis;
+
+		update_event = true;
 		TouchWindowPress = 1;
-	}	
+	}
 
     return update_event;
 }
@@ -426,15 +433,15 @@ static void ts_timer(unsigned long arg) {
 	input_sync(ts->input);
 
 	TouchWindowPress = 0;
-	PreRejectTouchCount =0; 
+	PreRejectTouchCount =0;
 
-	if (ts->keypad == KEY_MENU) {
-		input_report_key(ts->input, KEY_MENU, 0);
+	if (ts->keypad == LEFT_KEY) {
+		input_report_key(ts->input, LEFT_KEY, 0);
 		ts->keypad = 0;
 	}
 
-	if (ts->keypad == KEY_BACK) {
-		input_report_key(ts->input, KEY_BACK, 0);
+	if (ts->keypad == RIGHT_KEY) {
+		input_report_key(ts->input, RIGHT_KEY, 0);
 		ts->keypad = 0;
 		ts_key_event = 0;
 	}
@@ -482,7 +489,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 		 * These x, y co-ordinates adjustments will be removed once
 		 * Android framework adds calibration framework.
 		 */
-		
+
 		x_prime = y;
 		y_prime = x;
 
@@ -492,28 +499,28 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 		if (msm_tsdebug & 1)
 			pr_info("++++++++x=%d, y=%d++++++++\n", lx, ly);
 
-		if ((lx  <  menu_x) && (ly > menu_y)) {
+		if ((lx  <  left_x) && (ly > left_y)) {
 
 			if (msm_tsdebug & 1)
-				pr_info("MENU key : x=%d, y=%d\n", lx, ly);
-			
+				pr_info("%s: x=%d, y=%d\n", leftkeyname, lx, ly);
+
 			if (ts->keypad == 0) {
-				pr_debug("input report MENU key\n");
-				input_report_key(ts->input, KEY_MENU, 1);
-				ts->keypad = KEY_MENU;
+				pr_debug("input report %s\n", leftkeyname);
+				input_report_key(ts->input, LEFT_KEY, 1);
+				ts->keypad = LEFT_KEY;
 			}
- 
-		} else if ((lx > back_x) && (ly > back_y)) {
+
+		} else if ((lx > right_x) && (ly > right_y)) {
 			if (msm_tsdebug & 1)
-				pr_info("Back key : x=%d, y=%d\n", lx, ly);
+				pr_info("%s: x=%d, y=%d\n", rightkeyname, lx, ly);
 
 			if (ts->keypad == 0) {
-				pr_debug("input report BACK key\n");
-				input_report_key(ts->input, KEY_BACK, 1);
-				ts->keypad = KEY_BACK;
+				pr_debug("input report %s\n", rightkeyname);
+				input_report_key(ts->input, RIGHT_KEY, 1);
+				ts->keypad = RIGHT_KEY;
 				ts_key_event = 1;
-			}	
-		
+			}
+
 		} else {
 			if (PreRejectTouchCount > preRejectValue) {
 				ts_update_pen_state(ts, lx, ly, 255);
@@ -521,7 +528,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 				PreRejectTouchCount++;
 			}
 		}
-		
+
 		/* kick pen up timer - to make sure it expires again(!) */
 		mod_timer(&ts->timer, jiffies + msecs_to_jiffies(TS_PENUP_TIMEOUT_MS));
 
@@ -595,8 +602,8 @@ static int __devinit ts_probe(struct platform_device *pdev) {
 	input_dev->absbit[BIT_WORD(ABS_MISC)] = BIT_MASK(ABS_MISC);
 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 
-	set_bit(KEY_MENU, input_dev->keybit);
-	set_bit(KEY_BACK, input_dev->keybit);
+	set_bit(LEFT_KEY, input_dev->keybit);
+	set_bit(RIGHT_KEY, input_dev->keybit);
 
     if (pdata) {
 		x_max = pdata->x_max ? : X_MAX;
@@ -636,10 +643,10 @@ static int __devinit ts_probe(struct platform_device *pdev) {
 	if (result) {
 		pr_err("heaven_motion_misc_device register failed\n");
 		goto fail_misc_device_register_failed;
-	}  
+	}
 
-	pr_info("[SWIFT TOUCH CAL-PROBE] MenuKey X: %d, MENUKey y: %d\n", menu_x, menu_y); 
-	pr_info("[SWIFT TOUCH CAL-PROBE] BACKKey X: %d, BACKKey y: %d\n", back_x, back_y); 
+	pr_info("[SWIFT TOUCH CAL-PROBE] %s X: %d, %s y: %d\n", leftkeyname, left_x, leftkeyname, left_y);
+	pr_info("[SWIFT TOUCH CAL-PROBE] %s X: %d, %s y: %d\n", rightkeyname, right_x, rightkeyname, right_y);
 #endif
 
 	return 0;
@@ -686,7 +693,7 @@ static struct platform_driver ts_driver = {
 		.owner = THIS_MODULE,
 	},
 };
- 
+
 static int __init ts_init(void) {
 
 	return platform_driver_register(&ts_driver);
