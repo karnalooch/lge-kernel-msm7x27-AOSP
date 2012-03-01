@@ -428,8 +428,8 @@ static void ts_timer(unsigned long arg) {
 	TouchWindowPress = 0;
 	PreRejectTouchCount =0; 
 
-	if (ts->keypad == KEY_HOME) {
-		input_report_key(ts->input, KEY_HOME, 0);
+	if (ts->keypad == KEY_MENU) {
+		input_report_key(ts->input, KEY_MENU, 0);
 		ts->keypad = 0;
 	}
 
@@ -495,12 +495,12 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 		if ((lx  <  menu_x) && (ly > menu_y)) {
 
 			if (msm_tsdebug & 1)
-				pr_info("Home key : x=%d, y=%d\n", lx, ly);
+				pr_info("MENU key : x=%d, y=%d\n", lx, ly);
 			
 			if (ts->keypad == 0) {
-				pr_info("input report HOME key\n");
-				input_report_key(ts->input, KEY_HOME, 1);
-				ts->keypad = KEY_HOME;
+				pr_info("input report MENU key\n");
+				input_report_key(ts->input, KEY_MENU, 1);
+				ts->keypad = KEY_MENU;
 			}
  
 		} else if ((lx > back_x) && (ly > back_y)) {
@@ -595,7 +595,7 @@ static int __devinit ts_probe(struct platform_device *pdev) {
 	input_dev->absbit[BIT_WORD(ABS_MISC)] = BIT_MASK(ABS_MISC);
 	input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 
-	set_bit(KEY_HOME, input_dev->keybit); 
+	set_bit(KEY_MENU, input_dev->keybit);
 	set_bit(KEY_BACK, input_dev->keybit);
 
     if (pdata) {
