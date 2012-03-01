@@ -44,22 +44,22 @@ static struct msm_psy_batt_pdata msm_psy_batt_data = {
 	.calculate_capacity	= swift_battery_capacity,
 };
 
-static u32 swift_battery_capacity(u32 current_voltage)
-{
+static u32 swift_battery_capacity(u32 current_voltage) {
+
 	u32 low_voltage   = msm_psy_batt_data.voltage_min_design;
 	u32 high_voltage  = msm_psy_batt_data.voltage_max_design;
 	u32 cap = 0 ;
-	printk(KERN_INFO "Current Battary Voltage  = %d\n ",current_voltage);
-	if (current_voltage >= 4190) 
+
+	pr_info("Current Battary Voltage  = %d\n ",current_voltage);
+	if (current_voltage >= 4190)
 	  return 100;
 	else if (current_voltage <= 3200)
 	  return 0;
-	else 
-	  { 
+	else {
 	    cap =  (current_voltage - low_voltage) * 100 / (high_voltage - low_voltage);
-	    cap = cap +  (5 - cap % 5 ); 
+	    cap = cap +  (5 - cap % 5 );
 	    return  cap;
-	  }
+	}
 }
 
 static struct platform_device msm_batt_device = {
@@ -76,7 +76,7 @@ static char *ear_state_string[] = {
 
 enum {
 	EAR_STATE_EJECT = 0,
-	EAR_STATE_INJECT = 1, 
+	EAR_STATE_INJECT = 1,
 };
 
 enum {
@@ -84,13 +84,13 @@ enum {
 	EAR_INJECT = 1,
 };
 
-static int swift_gpio_earsense_work_func(void)
-{
+static int swift_gpio_earsense_work_func(void) {
+
 	int state;
 	int gpio_value;
 
 	gpio_value = gpio_get_value(GPIO_EAR_SENSE);
-	printk(KERN_INFO"%s: ear sense detected : %s\n", __func__, 
+	pr_info("%s: ear sense detected : %s\n", __func__,
 			gpio_value?"injected":"ejected");
 	if (gpio_value == EAR_EJECT) {
 		state = EAR_STATE_EJECT;
@@ -103,13 +103,12 @@ static int swift_gpio_earsense_work_func(void)
 	return state;
 }
 
-static char *swift_gpio_earsense_print_state(int state)
-{
+static char *swift_gpio_earsense_print_state(int state) {
 	return ear_state_string[state];
 }
 
-static int swift_gpio_earsense_sysfs_store(const char *buf, size_t size)
-{
+static int swift_gpio_earsense_sysfs_store(const char *buf, size_t size) {
+
 	int state;
 
 	if (!strncmp(buf, "eject", size - 1))
@@ -152,7 +151,7 @@ static struct platform_device *swift_misc_devices[] __initdata = {
 };
 
 /* main interface */
-void __init lge_add_misc_devices(void)
-{
+void __init lge_add_misc_devices(void) {
+
 	platform_add_devices(swift_misc_devices, ARRAY_SIZE(swift_misc_devices));
 }
