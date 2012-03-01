@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#include <asm/setup.h>
+#include <asm/io.h>
+
 #include <linux/types.h>
 #include <linux/list.h>
 #include <linux/err.h>
@@ -19,16 +22,16 @@
 #include <linux/i2c-gpio.h>
 #include <linux/power_supply.h>
 #include <linux/interrupt.h>
-#include <asm/setup.h>
+
 #include <mach/gpio.h>
 #include <mach/vreg.h>
 #include <mach/pmic.h>
 #include <mach/msm_battery.h>
 #include <mach/board.h>
 #include <mach/msm_iomap.h>
-#include <asm/io.h>
 #include <mach/rpc_server_handset.h>
 #include <mach/board_lge.h>
+
 #include "board-swift.h"
 
 static u32 swift_battery_capacity(u32 current_voltage);
