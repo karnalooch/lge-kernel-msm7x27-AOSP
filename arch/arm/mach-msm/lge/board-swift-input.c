@@ -76,10 +76,10 @@ static unsigned int keypad_col_gpios[] = { 37, 38, 39 };
 #define KEY_FOCUS 242
 
 static const unsigned short keypad_keymap_swift[ARRAY_SIZE(keypad_col_gpios) * ARRAY_SIZE(keypad_row_gpios)] = {
-	[KEYMAP_INDEX(0, 0)] = KEY_VOLUMEUP, 
-	[KEYMAP_INDEX(0, 1)] = KEY_VOLUMEDOWN, 
-	[KEYMAP_INDEX(1, 0)] = KEY_FOCUS, 
-	[KEYMAP_INDEX(1, 1)] = KEY_CAMERA, 
+	[KEYMAP_INDEX(0, 0)] = KEY_VOLUMEUP,
+	[KEYMAP_INDEX(0, 1)] = KEY_VOLUMEDOWN,
+	[KEYMAP_INDEX(1, 0)] = KEY_FOCUS,
+	[KEYMAP_INDEX(1, 1)] = KEY_CAMERA,
 	[KEYMAP_INDEX(1, 2)] = KEY_SEARCH,
 	[KEYMAP_INDEX(2, 0)] = KEY_SEND,
 	[KEYMAP_INDEX(2, 1)] = KEY_HOME,
@@ -93,15 +93,21 @@ static const unsigned short keypad_virtual_keys[] = {
 
 static struct gpio_event_input_devs *keypad_dev;
 
-int swift_matrix_info_wrapper(struct gpio_event_input_devs *gpio_input_devs,struct gpio_event_info *info, void **data, int func)
-{
+int swift_matrix_info_wrapper(struct gpio_event_input_devs *gpio_input_devs,
+                              struct gpio_event_info *info,
+                              void **data, int func) {
+
         int ret;
 	int i;
 
         pr_info("%s: func is %d", __func__, func);
 	if (func == GPIO_EVENT_FUNC_RESUME) {
-		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[0], 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,GPIO_CFG_2MA), GPIO_CFG_ENABLE);
-		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[1], 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[0], 0, GPIO_CFG_INPUT,
+					  GPIO_CFG_PULL_UP,GPIO_CFG_2MA),
+				 GPIO_CFG_ENABLE);
+		gpio_tlmm_config(GPIO_CFG(keypad_col_gpios[1], 0, GPIO_CFG_INPUT,
+					  GPIO_CFG_PULL_UP,GPIO_CFG_2MA),
+				 GPIO_CFG_ENABLE);
 	}
 
 	ret = gpio_event_matrix_func(gpio_input_devs, info, data, func);
@@ -118,9 +124,8 @@ int swift_matrix_info_wrapper(struct gpio_event_input_devs *gpio_input_devs,stru
         return ret;
 }
 
-static int swift_gpio_matrix_power(
-                const struct gpio_event_platform_data *pdata, bool on)
-{
+static int swift_gpio_matrix_power(const struct gpio_event_platform_data *pdata, bool on) {
+
 	/* this is dummy function to make gpio_event driver register suspend function
 	 * 2010-01-29, cleaneye.kim@lge.com
 	 * copy from ALOHA code
@@ -139,7 +144,8 @@ static struct gpio_event_matrix_info swift_keypad_matrix_info = {
 	.ninputs	= ARRAY_SIZE(keypad_col_gpios),
 	.settle_time.tv.nsec = 40 * NSEC_PER_USEC,
 	.poll_time.tv.nsec = 20 * NSEC_PER_MSEC,
-	.flags		= GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_PRINT_UNMAPPED_KEYS | GPIOKPF_DRIVE_INACTIVE
+	.flags		= GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_PRINT_UNMAPPED_KEYS |
+			  GPIOKPF_DRIVE_INACTIVE
 };
 
 
@@ -192,8 +198,8 @@ static struct platform_device *swift_input_devices[] __initdata = {
 };
 
 
-struct input_dev *msm_keypad_get_input_dev(void)
-{
+struct input_dev *msm_keypad_get_input_dev(void) {
+
 	return keypad_dev->dev[0];
 }
 
@@ -218,8 +224,7 @@ static struct platform_device accel_i2c_device = {
 	.dev.platform_data = &accel_i2c_pdata,
 };
 
-static int accel_power_set(unsigned char onoff)
-{
+static int accel_power_set(unsigned char onoff) {
 	int ret = 0;
 	return ret;
 }
@@ -227,6 +232,7 @@ static int accel_power_set(unsigned char onoff)
 static struct acceleration_platform_data accel_pdata = {
 	.power	= accel_power_set,
 };
+
 static struct i2c_board_info accel_i2c_bdinfo[] = {
 	[0] = {
 		I2C_BOARD_INFO("bma150", ACCEL_I2C_ADDRESS),
@@ -235,8 +241,8 @@ static struct i2c_board_info accel_i2c_bdinfo[] = {
 	}
 };
 
-static void __init swift_init_i2c_acceleration(int bus_num)
-{
+static void __init swift_init_i2c_acceleration(int bus_num) {
+
 	accel_i2c_device.id = bus_num;
 
 	init_gpio_i2c_pin(&accel_i2c_pdata, accel_i2c_pin[0], &accel_i2c_bdinfo[0]);
@@ -266,8 +272,8 @@ static struct platform_device ecom_i2c_device = {
 	.name = "i2c-gpio",
 	.dev.platform_data = &ecom_i2c_pdata,
 };
-static int ecom_power_set(unsigned char onoff)
-{
+
+static int ecom_power_set(unsigned char onoff) {
 	int ret = 0;
 	return ret;
 }
@@ -286,8 +292,8 @@ static struct i2c_board_info ecom_i2c_bdinfo[] = {
 	}
 };
 
-static void __init swift_init_i2c_ecompass(int bus_num)
-{
+static void __init swift_init_i2c_ecompass(int bus_num) {
+
 	ecom_i2c_device.id = bus_num;
 
 	init_gpio_i2c_pin(&ecom_i2c_pdata, ecom_i2c_pin[0], &ecom_i2c_bdinfo[0]);
@@ -297,8 +303,8 @@ static void __init swift_init_i2c_ecompass(int bus_num)
 }
 
 /* common function */
-void __init lge_add_input_devices(void)
-{
+void __init lge_add_input_devices(void) {
+
 	platform_add_devices(swift_input_devices, ARRAY_SIZE(swift_input_devices));
 
 	lge_add_gpio_i2c_device(swift_init_i2c_acceleration);
