@@ -165,7 +165,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 
 	count1 = 0;
 	for(i =0 ; i < count ; i++) {
-		//pr_info("data[%d]=0x%x\n",i,data1[i]);
+		/* pr_info("data[%d]=0x%x\n",i,data1[i]); */
 		if((data1[i]== 0x2C) || (data1[i]== 0x0D) || data1[i]== 0x0A) {
 			ii = 0;
 			value = 0;
@@ -177,7 +177,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 					value1*= 10;
 
 				value +=(data2[ii]-0x30)*value1;
-				//pr_info("[SWIFT]ii[%d] FIND value[%d]..data2[%d]... count1[%d]\n",ii,value,data2[ii],count1);
+				/* pr_info("[SWIFT]ii[%d] FIND value[%d]..data2[%d]... count1[%d]\n",ii,value,data2[ii],count1); */
 
 				if (count1 == 0) {
 					cal_data[cal_data_count] = value;
@@ -192,7 +192,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 		}
 		else {
 			data2[count1]= data1[i];
-			//pr_info("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i);
+			/* pr_info("[SWIFT] count1[%d]..data2[0x%x]....data1[0x%x]..i[%d]...\n",count1,data2[count1],data1[i],i); */
 			count1+=1;     
 		} 
 	}
@@ -204,7 +204,7 @@ int ts_calibration_for_touch_key_region(char *filename, int *cal_data) {
 	return 0;
 
 err_close_file:
-	pr_info("[SWIFT]err_close_file!!........\n");
+	pr_err("[SWIFT]err_close_file!!........\n");
 	sys_close(fd);
 	set_fs(old_fs);
 	return err;
@@ -224,13 +224,13 @@ static int touch_cal_open(struct inode *inode, struct file *file) {
 	   
 	 int status = 0;
 
-	 pr_info("touch_cal_open\n"); 	 
+	 pr_debug("touch_cal_open\n"); 	 
 	 return status;
 }
 
 static int touch_cal_release(struct inode *inode, struct file *file) {
 
-	 pr_info("touch_release\n"); 	 
+	 pr_debug("touch_release\n"); 	 
 	 return 0;
 }
 
@@ -498,7 +498,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 				pr_info("MENU key : x=%d, y=%d\n", lx, ly);
 			
 			if (ts->keypad == 0) {
-				pr_info("input report MENU key\n");
+				pr_debug("input report MENU key\n");
 				input_report_key(ts->input, KEY_MENU, 1);
 				ts->keypad = KEY_MENU;
 			}
@@ -508,7 +508,7 @@ static irqreturn_t ts_interrupt(int irq, void *dev_id) {
 				pr_info("Back key : x=%d, y=%d\n", lx, ly);
 
 			if (ts->keypad == 0) {
-				pr_info("input report BACK key\n");
+				pr_debug("input report BACK key\n");
 				input_report_key(ts->input, KEY_BACK, 1);
 				ts->keypad = KEY_BACK;
 				ts_key_event = 1;
