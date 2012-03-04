@@ -25,9 +25,12 @@
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
-#include <media/msm_camera.h>
-#include <mach/gpio.h>
 #include <linux/kthread.h>
+#include <linux/device.h>
+#include <linux/kernel.h>
+
+#include <mach/gpio.h>
+#include <media/msm_camera.h>
 
 #include "isx005.h"
 #include "isx005_reg.h"
@@ -84,7 +87,7 @@ static int32_t isx005_i2c_txdata(unsigned short saddr,
 	};
 
 	if (i2c_transfer(isx005_client->adapter, msg, 1) < 0) {
-		CDBG("isx005_i2c_txdata failed\n");
+		pr_err("%s: i2c_txdata failed\n", __func__);
 		return -EIO;
 	}
 
@@ -119,7 +122,7 @@ static int32_t isx005_i2c_write(unsigned short saddr,
 	}
 
 	if (rc < 0)
-		printk(KERN_ERR "i2c_write failed, addr = 0x%x, val = 0x%x!\n",
+		pr_err("i2c_write failed, addr = 0x%x, val = 0x%x!\n",
 			waddr, wdata);
 
 	return rc;
@@ -165,7 +168,7 @@ static int isx005_i2c_rxdata(unsigned short saddr,
 	};
 
 	if (i2c_transfer(isx005_client->adapter, msgs, 2) < 0) {
-		printk(KERN_ERR "isx005_i2c_rxdata failed!\n");
+		pr_err("isx005_i2c_rxdata failed!\n");
 		return -EIO;
 	}
 
@@ -207,7 +210,7 @@ static int32_t isx005_i2c_read(unsigned short   saddr,
 	}
 
 	if (rc < 0)
-		printk(KERN_ERR "isx005_i2c_read failed!\n");
+		pr_err("isx005_i2c_read failed!\n");
 
 	return rc;
 }
@@ -261,7 +264,7 @@ static int isx005_reg_init(void)
 				return rc;
 		}
 	} else {
-		printk(KERN_ERR "invalid pclk rate!\n");
+		pr_err("%s: invalid pclk rate!\n", __func__);
 		return -EINVAL;
 	}
 
@@ -279,7 +282,7 @@ static void dequeue_cfg_wq(struct config_work_queue *cfg_wq)
 	for (i = 0; i < cfg_wq_num; ++i) {
 		rc = dequeue_sensor_config(cfg_wq[i].cfgtype, cfg_wq[i].mode);
 		if (rc < 0) {
-			printk(KERN_ERR "[ERROR]%s: dequeue sensor config error!\n",
+			pr_err("%s: dequeue sensor config error!\n",
 				__func__);
 			break;
 		}
@@ -364,7 +367,7 @@ static int isx005_reg_preview(void)
 			&cm_changed_status,	BYTE_LEN);
 
 		if (cm_changed_status & 0x0002) {
-			CDBG("[%s]:Sensor Preview Mode check : %d-> success \n",
+			pr_info("%s: Sensor Preview Mode check : %d-> success \n",
 				__func__, cm_changed_status);
 			break;
 		} else
@@ -394,19 +397,19 @@ static int isx005_reg_snapshot(void)
 	/* Checking the mode change status */
 	/* eunyoung.shin@lge.com 2010.07.13 */
 	for (i = 0; i < 300; i++) {
-		CDBG("[%s]:Sensor Snapshot Mode Start\n", __func__);
+		pr_debug("%s: Sensor Snapshot Mode Start\n", __func__);
 		cm_changed_status = 0;
 		rc = isx005_i2c_read(isx005_client->addr, 0x00F8,
 			&cm_changed_status,	BYTE_LEN);
 
 		if (cm_changed_status & 0x0002) {
-			CDBG("[%s]:Sensor Snapshot Mode check : %d-> success \n",
+			pr_debug("%s: Sensor Snapshot Mode check : %d-> success \n",
 				__func__, cm_changed_status);
 			break;
 		} else
 			msleep(10);
 
-		CDBG("[%s]:Sensor Snapshot Mode checking : %d \n", __func__,
+		pr_debug("%s: Sensor Snapshot Mode checking : %d \n", __func__,
 			cm_changed_status);
 	}
 
@@ -423,7 +426,7 @@ static int isx005_set_sensor_mode(int mode)
 		for (retry = 0; retry < 3; ++retry) {
 			rc = isx005_reg_preview();
 			if (rc < 0)
-				printk(KERN_ERR "[ERROR]%s:Sensor Preview Mode Fail\n",
+				pr_err("%s: Sensor Preview Mode Fail\n",
 					__func__);
 			else
 				break;
@@ -435,7 +438,7 @@ static int isx005_set_sensor_mode(int mode)
 		for (retry = 0; retry < 3; ++retry) {
 			rc = isx005_reg_snapshot();
 			if (rc < 0)
-				printk(KERN_ERR "[ERROR]%s:Sensor Snapshot Mode Fail\n",
+				pr_err("%s: Sensor Snapshot Mode Fail\n",
 					__func__);
 			else
 				break;
@@ -446,7 +449,7 @@ static int isx005_set_sensor_mode(int mode)
 		return -EINVAL;
 	}
 
-	CDBG("Sensor Mode : %d, rc = %d\n", mode, rc);
+	pr_debug("%s: Sensor Mode: %d, rc = %d\n", __func__, mode, rc);
 
 	return rc;
 }
@@ -506,7 +509,7 @@ static int isx005_check_af_lock(void)
 			0x00F8, &af_lock, BYTE_LEN);
 
 		if (rc < 0) {
-			CDBG("isx005: reading af_lock fail\n");
+			pr_debug("isx005: reading af_lock fail\n");
 			return rc;
 		}
 
@@ -529,12 +532,12 @@ static int isx005_check_af_lock(void)
 				0x00F8, &af_lock, BYTE_LEN);
 
 		if (rc < 0) {
-			CDBG("isx005: reading af_lock fail\n");
+			pr_err("isx005: reading af_lock fail\n");
 			return rc;
 		}
 
 		if ((af_lock & 0x10) == 0x00) {
-			CDBG("af_lock is released\n");
+			pr_debug("af_lock is released\n");
 			break;
 		}
 		msleep(10);
@@ -549,7 +552,7 @@ static int isx005_check_focus(int *lock)
 	unsigned short af_status;
 	unsigned short af_result;
 
-	CDBG("isx005_check_focus\n");
+	pr_debug("isx005_check_focus\n");
 
 	/*af status check  0:load, 1: init,  8: af_lock */
 	rc = isx005_i2c_read(isx005_client->addr,
@@ -563,7 +566,7 @@ static int isx005_check_focus(int *lock)
 	/* af result read  success / fail*/
 	rc = isx005_i2c_read(isx005_client->addr, 0x6D77, &af_result, BYTE_LEN);
 	if (rc < 0) {
-		printk(KERN_ERR "[isx005.c]%s: fail in reading af_result\n",
+		pr_err("%s: fail in reading af_result\n",
 			__func__);
 		return rc;
 	}
@@ -624,7 +627,7 @@ static int isx005_set_af_start(int mode)
 			break;
 
 		default:
-			printk(KERN_ERR "[ERROR]%s: invalid af mode\n", __func__);
+			pr_err("%s: invalid af mode\n", __func__);
 			break;
 		}
 		/*af start*/
@@ -649,7 +652,7 @@ static int isx005_move_focus(int32_t steps)
 	prev_af_mode = FOCUS_MANUAL;
 
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:fail in writing for move focus\n",
+		pr_err("%s: fail in writing for move focus\n",
 			__func__);
 		return rc;
 	}
@@ -659,7 +662,7 @@ static int isx005_move_focus(int32_t steps)
 		rc = isx005_i2c_read(isx005_client->addr,
 				0x00F8, &cm_changed_sts, BYTE_LEN);
 		if (rc < 0) {
-			printk(KERN_ERR "[ERROR]%s; fail in reading cm_changed_sts\n",
+			pr_err("%s; fail in reading cm_changed_sts\n",
 				__func__);
 			return rc;
 		}
@@ -680,7 +683,7 @@ static int isx005_move_focus(int32_t steps)
 		rc = isx005_i2c_read(isx005_client->addr,
 			0x00FC, &cm_changed_clr, BYTE_LEN);
 		if (rc < 0) {
-			printk(KERN_ERR "[ERROR]%s:fail in reading cm_changed_clr\n",
+			pr_err("%s: fail in reading cm_changed_clr\n",
 				__func__);
 			return rc;
 		}
@@ -715,7 +718,7 @@ static int isx005_move_focus(int32_t steps)
 	for (i = 0; i < 24; ++i) {
 		rc = isx005_i2c_read(isx005_client->addr, 0x6D7A, &af_pos, WORD_LEN);
 		if (rc < 0) {
-			printk(KERN_ERR "[ERROR]%s:fail in reading af_lenspos\n",
+			pr_err("%s: fail in reading af_lenspos\n",
 				__func__);
 			return rc;
 		}
@@ -735,7 +738,7 @@ static int isx005_set_default_focus(void)
 
 	rc = isx005_cancel_focus(prev_af_mode);
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:fail in cancel_focus\n", __func__);
+		pr_err("%s: fail in cancel_focus\n", __func__);
 		return rc;
 	}
 
@@ -745,7 +748,7 @@ static int isx005_set_default_focus(void)
 	prev_af_mode = FOCUS_AUTO;
 
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:fail in writing for focus\n", __func__);
+		pr_err("%s: fail in writing for focus\n", __func__);
 		return rc;
 	}
 
@@ -896,7 +899,7 @@ static int isx005_set_effect(int effect)
 		return -EINVAL;
 	}
 
-	CDBG("Effect : %d, rc = %d\n", effect, rc);
+	pr_debug("Effect: %d, rc = %d\n", effect, rc);
 
 	return rc;
 }
@@ -1151,7 +1154,7 @@ static int32_t isx005_set_scene_mode(int8_t mode)
 		break;
 
 	default:
-		printk(KERN_ERR "[ERROR]%s:Incorrect scene mode value\n",
+		pr_err("%s: Incorrect scene mode value\n",
 			__func__);
 	}
 
@@ -1309,7 +1312,7 @@ static int32_t isx005_set_brightness(int8_t brightness)
 		break;
 
 	default:
-		printk(KERN_ERR "[ERROR]%s:incoreect brightness value\n",
+		pr_err("%s: incoreect brightness value\n",
 			__func__);
 	}
 
@@ -1324,7 +1327,7 @@ static int isx005_init_sensor(const struct msm_camera_sensor_info *data)
 
 	rc = data->pdata->camera_power_on();
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:failed to power on!\n", __func__);
+		pr_err("%s: failed to power on!\n", __func__);
 		return rc;
 	}
 
@@ -1333,16 +1336,14 @@ static int isx005_init_sensor(const struct msm_camera_sensor_info *data)
 	if (rc < 0) {
 		for (num = 0; num < 5; num++) {
 			msleep(2);
-			printk(KERN_ERR
-				"[ERROR]%s:Set initial register error! retry~! \n", __func__);
+			pr_err("%s: Set initial register error! retry! \n", __func__);
 			rc = isx005_reg_init();
 			if (rc < 0)	{
 				num++;
-				printk(KERN_ERR
-					"[ERROR]%s:Set initial register error!- loop no:%d \n",
+				pr_err("%s: Set initial register error!- loop no:%d \n",
 					__func__, num);
 			} else {
-				printk(KERN_DEBUG "[%s]:Set initial register Success!\n",
+				pr_err("%s: Set initial register Success!\n",
 					__func__);
 				break;
 			}
@@ -1368,10 +1369,8 @@ static int isx005_sensor_init_probe(const struct msm_camera_sensor_info *data)
 {
 	int rc = 0;
 
-	CDBG("init entry \n");
-
 	if (data == 0) {
-		printk(KERN_ERR "[ERROR]%s: data is null!\n", __func__);
+		pr_err("%s: data is null!\n", __func__);
 		return -1;
 	}
 
@@ -1387,7 +1386,7 @@ static int isx005_sensor_init_probe(const struct msm_camera_sensor_info *data)
 	mutex_unlock(&isx005_mutex);
 
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:failed to initialize sensor!\n", __func__);
+		pr_err("%s: failed to initialize sensor!\n", __func__);
 		goto init_probe_fail;
 	}
 
@@ -1406,7 +1405,7 @@ int isx005_sensor_init(const struct msm_camera_sensor_info *data)
 
 	isx005_ctrl = kzalloc(sizeof(struct isx005_ctrl), GFP_KERNEL);
 	if (!isx005_ctrl) {
-		printk(KERN_ERR "[ERROR]%s:isx005_init failed!\n", __func__);
+		pr_err("%s: isx005_init failed!\n", __func__);
 		rc = -ENOMEM;
 		goto init_done;
 	}
@@ -1416,7 +1415,7 @@ int isx005_sensor_init(const struct msm_camera_sensor_info *data)
 
 	rc = isx005_sensor_init_probe(data);
 	if (rc < 0) {
-		printk(KERN_ERR "[ERROR]%s:isx005_sensor_init failed!\n", __func__);
+		pr_err("%s: isx005_sensor_init failed!\n", __func__);
 		goto init_fail;
 	}
 
@@ -1433,7 +1432,7 @@ int isx005_sensor_release(void)
 	int rc = 0;
 
 	if (always_on) {
-		printk(KERN_INFO "always power-on camera.\n");
+		pr_debug("%s: always power-on camera.\n", __func__);
 		return rc;
 	}
 
@@ -1515,7 +1514,7 @@ int isx005_sensor_config(void __user *argp)
 	if (rc < 0)
 		return -EFAULT;
 
-	CDBG("isx005_ioctl, cfgtype = %d, mode = %d\n",
+	pr_debug("isx005_ioctl, cfgtype = %d, mode = %d\n",
 		cfg_data.cfgtype, cfg_data.mode);
 
 	mutex_lock(&isx005_tuning_mutex);
@@ -1618,12 +1617,12 @@ static int isx005_i2c_probe(struct i2c_client *client,
 
 	isx005_client = client;
 
-	CDBG("isx005_probe succeeded!\n");
+	pr_debug("isx005_probe succeeded!\n");
 
 	return rc;
 
 probe_failure:
-	printk(KERN_ERR "[ERROR]%s:isx005_probe failed!\n", __func__);
+	pr_err("isx005_probe failed!\n");
 	return rc;
 }
 
@@ -1639,7 +1638,7 @@ static struct i2c_driver isx005_i2c_driver = {
 static ssize_t pclk_show(struct device *dev, struct device_attribute *attr,
 	char *buf)
 {
-	printk(KERN_INFO "mclk_rate = %d\n", pclk_rate);
+	dev_info(dev, "mclk_rate = %d\n", pclk_rate);
 	return 0;
 }
 
@@ -1651,7 +1650,7 @@ static ssize_t pclk_store(struct device *dev, struct device_attribute *attr,
 	sscanf(buf, "%d", &value);
 	pclk_rate = value;
 
-	printk(KERN_INFO "pclk_rate = %d\n", pclk_rate);
+	dev_dbg(dev, "pclk_rate = %d\n", pclk_rate);
 	return size;
 }
 
@@ -1660,7 +1659,7 @@ static DEVICE_ATTR(pclk, S_IRWXUGO, pclk_show, pclk_store);
 static ssize_t mclk_show(struct device *dev, struct device_attribute *attr,
 	char *buf)
 {
-	printk(KERN_INFO "mclk_rate = %d\n", mclk_rate);
+	dev_info(dev, "mclk_rate = %d\n", mclk_rate);
 	return 0;
 }
 
@@ -1672,7 +1671,7 @@ static ssize_t mclk_store(struct device *dev, struct device_attribute *attr,
 	sscanf(buf, "%d", &value);
 	mclk_rate = value;
 
-	printk(KERN_INFO "mclk_rate = %d\n", mclk_rate);
+	dev_dbg(dev, "mclk_rate = %d\n", mclk_rate);
 	return size;
 }
 
@@ -1681,7 +1680,7 @@ static DEVICE_ATTR(mclk, S_IRWXUGO, mclk_show, mclk_store);
 static ssize_t always_on_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	printk(KERN_INFO "always_on = %d\n", always_on);
+	dev_dbg(dev, "always_on = %d\n", always_on);
 	return 0;
 }
 
@@ -1693,7 +1692,7 @@ static ssize_t always_on_store(struct device *dev,
 	sscanf(buf, "%d", &value);
 	always_on = value;
 
-	printk(KERN_INFO "always_on = %d\n", always_on);
+	dev_dbg(dev, "always_on = %d\n", always_on);
 	return size;
 }
 
@@ -1718,24 +1717,24 @@ static int isx005_sensor_probe(const struct msm_camera_sensor_info *info,
 
 	rc = device_create_file(&isx005_pdev->dev, &dev_attr_pclk);
 	if (rc < 0) {
-		printk(KERN_INFO "device_create_file error!\n");
+		pr_err("device_create_file error for pclk isx005!\n");
 		return rc;
 	}
 
 	rc = device_create_file(&isx005_pdev->dev, &dev_attr_mclk);
 	if (rc < 0) {
-		printk(KERN_INFO "device_create_file error!\n");
+		pr_err("device_create_file error for mclk isx005!\n");
 		return rc;
 	}
 
 	rc = device_create_file(&isx005_pdev->dev, &dev_attr_always_on);
 	if (rc < 0) {
-		printk(KERN_INFO "device_create_file error!\n");
+		pr_err("device_create_file error \"always on\" isx005!\n");
 		return rc;
 	}
 
 probe_done:
-	CDBG("%s %s:%d\n", __FILE__, __func__, __LINE__);
+	pr_err("failed to probe sensor isx005\n");
 	return rc;
 }
 
