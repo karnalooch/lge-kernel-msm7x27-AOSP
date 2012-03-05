@@ -38,7 +38,6 @@ obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-camera.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-input.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-misc.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-pm.o
-obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-leds.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-vibrator.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-gpio-i2c.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-amp.o

@@ -144,10 +144,18 @@ static struct platform_device swift_earsense_device = {
 	},
 };
 
+static struct platform_device msm_device_pmic_leds = {
+        .name = "pmic-leds",
+        .id = -1,
+        .dev.platform_data = "button-backlight",
+};
+
+
 /* misc platform devices */
 static struct platform_device *swift_misc_devices[] __initdata = {
 	&msm_batt_device,
 	&swift_earsense_device,
+	&msm_device_pmic_leds,
 };
 
 /* main interface */

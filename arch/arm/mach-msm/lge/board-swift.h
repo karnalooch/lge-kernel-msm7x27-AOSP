@@ -126,6 +126,5 @@ void config_camera_off_gpios(void);
 void camera_power_mutex_lock(void);
 void camera_power_mutex_unlock(void);
 void swift_pwrsink_resume(void);
-void swift_turn_off_led(void);
 
 #endif

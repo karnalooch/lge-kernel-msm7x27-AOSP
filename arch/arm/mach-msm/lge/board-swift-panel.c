@@ -74,7 +74,6 @@ static void __init msm_fb_add_devices(void)
 
 static struct rt9393_platform_data rt9393_pdata = {
 	.gpio = GPIO_LCD_BL_EN,
-	.led_off = &swift_turn_off_led,
 };
 
 static struct platform_device rt9393_platform_device = {
