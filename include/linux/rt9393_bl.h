@@ -1,4 +1,4 @@
-/* -backlight
+/* include/linux/rt9393_bl.h
  *
  * Copyright (C) 2009-2011 LGE Inc.
  *               2012 Henning Heinold
