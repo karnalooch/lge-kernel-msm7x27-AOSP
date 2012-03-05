@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/rt9393_bl.h>
+#include <linux/device.h>
 #if defined(CONFIG_RT9393_SYS_DEBUG)
 #include <linux/fs.h>
 #endif
@@ -151,7 +152,7 @@ static int rt9393_send_intensity(struct backlight_device *bldev)
 		circular = 32 - (next_intensity - current_intensity);
 		KNIGHT_DBG(lge_bl_debug_mask, "circular = %d\n", circular);
 	}
-	
+
 	/* real control RT9393 */
 	if (next_intensity == 0) { /* shutdown */
 		rt9393_power_down();
@@ -170,7 +171,7 @@ static int rt9393_send_intensity(struct backlight_device *bldev)
 	current_intensity = next_intensity;
 	spin_unlock(&rt9393_lock);
 
-	if (next_intensity == 0 && pdata->led_off) 
+	if (next_intensity == 0 && pdata->led_off)
 		pdata->led_off();
 
 	return 0;
@@ -251,7 +252,7 @@ static int rt9393_probe(struct platform_device *pdev)
         if (!pdata) {
                 return -ENODEV;
         }
-	
+
 	drvdata = kzalloc(sizeof(struct bl9393_driver_data), GFP_KERNEL);
         if (!drvdata)
                 return -ENOMEM;
@@ -262,16 +263,16 @@ static int rt9393_probe(struct platform_device *pdev)
 	err = gpio_request(drvdata->gpio, 0);
 
 	if (err < 0 ) {
-		pr_err("Cannot get the gpio pin : %d\n", drvdata->gpio);
+		dev_err(&pdev->dev, "Cannot get the gpio pin : %d\n", drvdata->gpio);
 		kfree(drvdata);
 		return err;
 	}
-	
+
 	memset(&props, 0, sizeof(struct backlight_properties));
-	
+
 	bldev = backlight_device_register("rt9393", &pdev->dev, NULL, &rt9393_ops,&props);
 	if (IS_ERR(bldev)) {
-		pr_err("failed to register backlight device\n");
+		dev_err(&pdev->dev, "failed to register backlight device\n");
 		kfree(drvdata);
 		return PTR_ERR(bldev);
 	}
@@ -348,7 +349,7 @@ static int __init rt9393_init(void)
 
 	ret = platform_driver_register(&this_driver);
 	if (ret) {
-		pr_err("platform driver cannot register\n");
+		pr_err("rt9393: platform driver cannot register\n");
 		return ret;
 	}
 	return 0;
