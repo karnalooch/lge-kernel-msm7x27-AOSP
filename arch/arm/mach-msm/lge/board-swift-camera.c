@@ -38,7 +38,7 @@ void camera_power_mutex_unlock()
 }
 
 struct i2c_board_info i2c_devices[1] = {
-#if defined (CONFIG_ISX005)
+#if defined (CONFIG_ISX005_SWIFT)
 	{
 		I2C_BOARD_INFO("isx005", CAM_I2C_SLAVE_ADDR),
 	},
@@ -190,7 +190,7 @@ static struct msm_camera_device_platform_data msm_camera_device_data = {
 	.camera_power_off = camera_power_off,
 };
 
-#if defined (CONFIG_ISX005)
+#if defined (CONFIG_ISX005_SWIFT)
 static struct msm_camera_sensor_flash_data flash_none = {
 	.flash_type = MSM_CAMERA_FLASH_NONE,
 };
@@ -216,7 +216,7 @@ static struct platform_device msm_camera_sensor_isx005 = {
 #endif
 
 static struct platform_device *swift_camera_devices[] __initdata = {
-#if defined (CONFIG_ISX005)
+#if defined (CONFIG_ISX005_SWIFT)
 	&msm_camera_sensor_isx005,
 #endif
 };

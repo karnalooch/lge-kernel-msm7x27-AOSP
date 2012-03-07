@@ -557,6 +557,7 @@ struct exp_gain_cfg {
 struct focus_cfg {
 	int32_t steps;
 	int dir;
+	int mode;
 };
 
 struct fps_cfg {
@@ -591,6 +592,11 @@ struct sensor_cfg_data {
 		struct focus_cfg focus;
 		struct fps_cfg fps;
 		struct wb_info_cfg wb_info;
+		int8_t wb;
+		int8_t iso;
+		int8_t scene_mode;
+		int8_t ev;
+		int8_t zoom;
 	} cfg;
 };
 

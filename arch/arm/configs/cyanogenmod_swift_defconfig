@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Mon Feb 27 23:56:09 2012
+# Wed Mar  7 15:34:15 2012
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1485,8 +1485,7 @@ CONFIG_MSM_CAMERA=y
 # Camera Sensor Selection
 #
 # CONFIG_MT9T013 is not set
-CONFIG_ISX005=y
-# CONFIG_ISX005_ROTATION_180 is not set
+CONFIG_ISX005_SWIFT=y
 # CONFIG_MT9T113 is not set
 # CONFIG_S5K5CAGA is not set
 # CONFIG_MT9P111 is not set
