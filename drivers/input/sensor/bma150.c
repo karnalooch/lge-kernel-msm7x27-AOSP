@@ -100,7 +100,7 @@ static char bma150_i2c_write(unsigned char reg_addr, unsigned char *data, unsign
 static char bma150_i2c_read(unsigned char reg_addr, unsigned char *data, unsigned char len);
 
 static const struct i2c_device_id bma150_id[] = {
-        { "acceleration", 0 },
+        { "bma150", 0 },
         { }
 };
 
@@ -1124,7 +1124,7 @@ static struct i2c_driver bma150_driver = {
 #endif
 	.driver = {
                 .owner = THIS_MODULE,
-		.name	= "acceleration",
+		.name	= "bma150",
 	},
 	.detect	= bma150_detect,
         .address_list = normal_i2c,
