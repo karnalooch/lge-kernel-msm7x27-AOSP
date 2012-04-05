@@ -82,7 +82,7 @@
 #define BMA150_IOC_MAXNR	48
 
 
-#define DEBUG	1
+#define DEBUG	0
 
 static struct i2c_client *bma150_client = NULL;
 
@@ -249,7 +249,6 @@ static long bma150_unlock_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
 	/* cmd mapping */
 
-	pr_info("bma150: we got before the switch");
 	switch(cmd) {
 
 	case BMA150_SOFT_RESET:
@@ -392,7 +391,6 @@ static long bma150_unlock_ioctl(struct file *file, unsigned int cmd, unsigned lo
 #endif
 			return -EFAULT;
 		}
-		pr_info("BMA150: xyz read");
 		return err;
 
 	/* setters */

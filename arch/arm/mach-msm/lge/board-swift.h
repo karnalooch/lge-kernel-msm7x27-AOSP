@@ -76,7 +76,6 @@
 #define ECOM_GPIO_INT		18
 #define ECOM_GPIO_I2C_SCL	30
 #define ECOM_GPIO_I2C_SDA	31
-#define ECOM_GPIO_RST		23
 #define ECOM_I2C_ADDRESS	0x1C
 
 /* lcd & backlight */

@@ -33,6 +33,7 @@
 #include <linux/switch.h>
 #include <linux/input.h>
 #include <linux/debugfs.h>
+#include <linux/slab.h>
 #include <asm/gpio.h>
 #include <asm/atomic.h>
 #include <mach/board.h>

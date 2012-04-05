@@ -160,7 +160,7 @@ static struct gpio_event_platform_data swift_keypad_data = {
 	.power          = swift_gpio_matrix_power,
 };
 
-struct platform_device keypad_device_swift= {
+struct platform_device keypad_device_swift = {
 	.name	= GPIO_EVENT_DEV_NAME,
 	.id	= -1,
 	.dev	= {
@@ -274,7 +274,17 @@ static struct platform_device ecom_i2c_device = {
 };
 
 static int ecom_power_set(unsigned char onoff) {
-	int ret = 0;
+
+        int ret = 0;
+        struct vreg *gp6_vreg = vreg_get(0, "gp6");
+
+        if (onoff) {
+                vreg_enable(gp6_vreg);
+                ret = vreg_set_level(gp6_vreg, 2600);
+        } else {
+                vreg_disable(gp6_vreg);
+        }
+
 	return ret;
 }
 
@@ -307,6 +317,7 @@ void __init lge_add_input_devices(void) {
 
 	platform_add_devices(swift_input_devices, ARRAY_SIZE(swift_input_devices));
 
-	lge_add_gpio_i2c_device(swift_init_i2c_acceleration);
+
 	lge_add_gpio_i2c_device(swift_init_i2c_ecompass);
+	lge_add_gpio_i2c_device(swift_init_i2c_acceleration);
 }

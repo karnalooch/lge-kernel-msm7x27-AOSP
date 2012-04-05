@@ -39,8 +39,6 @@ obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-input.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-misc.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-pm.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-vibrator.o
-obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-amp.o
-#obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-headset.o
 
 obj-$(CONFIG_MACH_MSM7X27_GELATO) += board-gelato.o
 obj-$(CONFIG_MACH_MSM7X27_GELATO) += board-gelato-mmc.o
