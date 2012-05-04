@@ -24,7 +24,7 @@ obj-$(CONFIG_INPUT_TOUCHSCREEN)	+= touchscreen/
 obj-$(CONFIG_INPUT_MISC)	+= misc/
 
 #LGE_CHANGES_S [junyeong.han] 2010-01-11, [COMMON] Add sensor directory.
-obj-$(CONFIG_INPUT_SENSOR)	+= sensor/
+obj-$(CONFIG_INPUT_SENSOR)	+= sensor/ sensor_swift/
 #LGE_CHANGES_E [junyeong.han] 2010-01-11, [COMMON]
 
 obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
