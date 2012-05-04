@@ -639,7 +639,7 @@ if(((int)battery_temp >= 45) /* || ((int)battery_temp <= -10) */ ) /* Gelato DS 
 			supp = &msm_psy_batt;
 
 			/* Correct charger status */
-			if (charger_status != CHARGER_STATUS_INVALID) {
+			if (charger_status != CHARGER_STATUS_INVALID ) {
 				DBG_LIMIT("BATT: No charging!\n");
 				charger_status = CHARGER_STATUS_INVALID;
 				msm_batt_info.batt_status =
@@ -713,22 +713,20 @@ if(((int)battery_temp >= 45) /* || ((int)battery_temp <= -10) */ ) /* Gelato DS 
 #endif
 		/* Correct charger status */
 		if (charger_type != CHARGER_TYPE_INVALID &&
-		    charger_status == CHARGER_STATUS_GOOD) {
+		    charger_status == CHARGER_STATUS_GOOD   ) {
 #ifdef CONFIG_MACH_LGE
 		/* LGE_CHANGE
 		 * add for Full charging
 		 * 2010-05-04 baborobo@lge.com
 		 */
-		  if(battery_level == BATTERY_LEVEL_FULL)	{
-				DBG_LIMIT("BATT: FULL\n");
-				msm_batt_info.batt_status =
-					POWER_SUPPLY_STATUS_FULL;
-			}else
-			{
-				DBG_LIMIT("BATT: In charging\n");
-				msm_batt_info.batt_status =
-					POWER_SUPPLY_STATUS_CHARGING;
-			}
+	if (supp) {
+		if (supp->type != POWER_SUPPLY_TYPE_BATTERY )
+ 		{
+ 		DBG_LIMIT("BATT: In charging\n");
+		msm_batt_info.batt_status =
+		POWER_SUPPLY_STATUS_CHARGING;
+		}
+           	  }
 #else
 			DBG_LIMIT("BATT: In charging\n");
 			msm_batt_info.batt_status =
