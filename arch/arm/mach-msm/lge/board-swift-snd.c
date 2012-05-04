@@ -1,7 +1,7 @@
 /* linux/arch/arm/mach-msm/lge/board-swift-snd.c
  *
  * Copyright (C) 2010 LGE.
- *
+ * Copyright (C) 2012 miroslav_mm.
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -20,29 +20,28 @@
 
 #define SND(desc, num) { .name = #desc, .id = num }
 static struct snd_endpoint snd_endpoints_list[] = {
-
-
-	SND(HANDSET_LOOPBACK,5),
-	SND(HANDSET, 6),
-	SND(HEADSET_LOOPBACK, 1),
+	SND(HANDSET, 0),
+	SND(HEADSET_STEREO_AUDIO, 2),
+	SND(TTY_HEADSET, 2),
+	SND(HEADSET_STEREO, 2),
 	SND(HEADSET, 3),
-	SND(HEADSET_STEREO, 3),
-	SND(SPEAKER, 0),
-	SND(SPEAKER_IN_CALL, 7),
-	SND(SPEAKER_RING, 8),
-	SND(HEADSET_AND_SPEAKER, 8),
-	SND(FM_HEADSET, 10),
-	SND(FM_SPEAKER, 11),
-	SND(BT, 13),
-	SND(TTY_HEADSET, 15),
-	SND(TTY_VCO, 16),
-	SND(TTY_HCO, 17),
-	SND(TTY_HCO_SPEAKER, 18),
-	SND(HANDSET_VR, 20),
-	SND(HEADSET_VR, 21),
-	SND(BT_VR, 23),
-	SND(CURRENT, 30),
-
+	SND(HEADSET_LOOPBACK, 3),
+	SND(SPEAKER_PHONE, 6),
+	SND(SPEAKER_IN_CALL, 6),
+	SND(SPEAKER_AUDIO, 5),
+	SND(SPEAKER, 6),
+	SND(SPEAKER_RING, 5),
+	SND(TTY_VCO, 5),
+	SND(TTY_HCO, 5),
+	SND(HEADSET_AND_SPEAKER, 7),
+	SND(VOICE_RECORDER, 8),
+	SND(FM_RADIO_HEADSET_MEDIA, 9),
+	SND(FM_HEADSET, 9),
+	SND(FM_RADIO_SPEAKER_MEDIA, 10),
+	SND(FM_SPEAKER, 10),
+	SND(BT, 12),
+	SND(BT_A2DP, 11),
+	SND(CURRENT, 35),
 };
 #undef SND
 
