@@ -168,7 +168,7 @@
 #define MSM_CAMERA_STROBE_FLASH_NONE 0
 #define MSM_CAMERA_STROBE_FLASH_XENON 1
 
-#define MSM_MAX_CAMERA_SENSORS  5
+#define MSM_MAX_CAMERA_SENSORS  3
 #define MAX_SENSOR_NAME 32
 
 #define PP_SNAP  0x01
@@ -203,8 +203,9 @@ struct msm_ctrl_cmd {
 struct msm_vfe_evt_msg {
 	unsigned short type;	/* 1 == event (RPC), 0 == message (adsp) */
 	unsigned short msg_id;
+	int af_mode_locked;
 	unsigned int len;	/* size in, number of bytes out */
-	uint32_t frame_id;
+
 	void *data;
 };
 
@@ -213,7 +214,7 @@ struct msm_isp_evt_msg {
 	unsigned short msg_id;
 	unsigned int len;	/* size in, number of bytes out */
 	/* maximum possible data size that can be
-i	  sent to user space as v4l2 data structure
+	  sent to user space as v4l2 data structure
 	  is only of 64 bytes */
 	uint8_t data[48];
 };
@@ -409,7 +410,7 @@ struct fd_roi_info {
 };
 
 struct msm_frame {
-	struct timespec ts;
+
 	int path;
 	unsigned long buffer;
 	uint32_t y_off;
@@ -418,8 +419,6 @@ struct msm_frame {
 
 	void *cropinfo;
 	int croplen;
-	uint32_t error_code;
-	struct fd_roi_info roi_info;
 };
 
 #define MSM_CAMERA_ERR_MASK (0xFFFFFFFF & 1)

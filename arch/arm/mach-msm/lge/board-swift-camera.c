@@ -91,11 +91,10 @@ static void config_gpio_table(uint32_t *table, int len)
 	}
 }
 
-int config_camera_on_gpios(void)
+void config_camera_on_gpios(void)
 {
 	config_gpio_table(camera_on_gpio_table,
 		ARRAY_SIZE(camera_on_gpio_table));
-	return 0;
 }
 
 void config_camera_off_gpios(void)
@@ -106,7 +105,7 @@ void config_camera_off_gpios(void)
 
 int camera_power_on (void)
 {
-	int rc = 0;
+	int rc;
 	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();
@@ -152,7 +151,7 @@ int camera_power_on (void)
 
 int camera_power_off (void)
 {
-	int rc = 0;
+	int rc;
 	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();

@@ -1688,9 +1688,9 @@ init_probe_fail:
     return rc;
 }
 
-int32_t isx005_sensor_init(const struct msm_camera_sensor_info *data)
+static int isx005_sensor_init(const struct msm_camera_sensor_info *data)
 {
-	int32_t rc;
+	int rc;
 	isx005_sensor_power_enable();
 	isx005_ctrl = kzalloc(sizeof(struct isx005_ctrl), GFP_KERNEL);
 	if (!isx005_ctrl) {
@@ -1706,7 +1706,6 @@ int32_t isx005_sensor_init(const struct msm_camera_sensor_info *data)
 	msm_camio_clk_rate_set(24000000);
 	msm_camio_camif_pad_reg_reset();
 	mdelay(5);
-
 
 	rc = isx005_reset(data,1);
 	if (rc < 0) {
@@ -1762,8 +1761,8 @@ int isx005_sensor_config(void __user *argp)
 		return -EFAULT;
 
 	if(debug_mask)
-		printk("[isx005.c] isx005_ioctl, cfgtype = %d, mode = %d, width= %d, height %d \n",
-		       cfg_data.cfgtype, cfg_data.mode, cfg_data.width, cfg_data.height);
+		printk("[isx005.c] isx005_ioctl, cfgtype = %d, mode = %d width = %d height = %d \n",
+		       cfg_data.cfgtype, cfg_data.mode,cfg_data.width,cfg_data.height);
 
 	switch (cfg_data.cfgtype) {
 	case CFG_SET_MODE:
@@ -1775,7 +1774,7 @@ int isx005_sensor_config(void __user *argp)
 
 	case CFG_SET_EFFECT:
 		if(debug_mask)
-			printk("stud [isx005.c]%s: command is CFG_SET_EFFECT\n",__func__);
+			printk("[isx005.c]%s: command is CFG_SET_EFFECT\n",__func__);
 
 		rc = isx005_set_effect(cfg_data.cfg.effect);
 
@@ -1783,7 +1782,7 @@ int isx005_sensor_config(void __user *argp)
 
   case CFG_SET_ZOOM_VIDEO:
 		if(debug_mask)
-			printk("stud [isx005.c]%s: command is CFG_SET_ZOOM\n",__func__);
+			printk("[isx005.c]%s: command is CFG_SET_ZOOM\n",__func__);
 
 		rc = isx005_set_zoom(cfg_data.cfg.zoom);
 
@@ -1791,7 +1790,7 @@ int isx005_sensor_config(void __user *argp)
 
 	case CFG_SET_PARM_AF_MODE:
 		if(debug_mask)
-			printk(" stud [isx005.c]%s: command is CFG_SET_PARM_AF_MODE\n",__func__);
+			printk("[isx005.c]%s: command is CFG_SET_PARM_AF_MODE\n",__func__);
 		focus_mode = cfg_data.cfg.focus.mode;
 		rc = isx005_focus_config(cfg_data.cfg.focus.mode);
 
@@ -1847,8 +1846,8 @@ int isx005_sensor_config(void __user *argp)
 		break;
 	case CFG_SET_BRIGHTNESS:
 		if(debug_mask)
-			printk("stud - [isx005.c]%s: command is CFG_SET_BRIGHTNESS\n",__func__);
-
+			printk("[isx005.c]%s: command is CFG_SET_BRIGHTNESS\n",__func__);
+ 
 		rc = isx005_set_brightness(cfg_data.cfg.ev);
 		break;
 	default:

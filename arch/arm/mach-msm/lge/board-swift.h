@@ -52,7 +52,7 @@
 #define TS_I2C_SLAVE_ADDR	0x20
 
 /* camera */
-#define CAM_I2C_SLAVE_ADDR		0x1a
+#define CAM_I2C_SLAVE_ADDR		0x1A
 #define GPIO_CAM_RESET			0		/* GPIO_0 */
 #define GPIO_CAM_PWDN		 	1		/* GPIO_1 */
 #define GPIO_CAM_MCLK			15		/* GPIO_15 */
@@ -119,8 +119,11 @@ extern struct i2c_board_info i2c_devices[1];
 extern int camera_power_state;
 extern int lcd_bl_power_state;
 
+int camera_power_on(void);
+int camera_power_off(void);
+
 /* interface functions */
-int config_camera_on_gpios(void);
+void config_camera_on_gpios(void);
 void config_camera_off_gpios(void);
 void camera_power_mutex_lock(void);
 void camera_power_mutex_unlock(void);
