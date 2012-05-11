@@ -53,7 +53,7 @@ uint32 mdp_total_vdopkts;
 
 extern u32 msm_fb_debug_enabled;
 extern struct workqueue_struct *mdp_dma_wq;
-
+extern void mddi_samsung_position();
 int vsync_start_y_adjust = 4;
 #ifdef CONFIG_LGE_BLUE_ERROR_HANDLER
 extern int LG_ErrorHandler_enable ;	/*LGE_CHANGE [bluerti@lge.com] */
@@ -74,7 +74,7 @@ static void mdp_dma2_update_lcd(struct msm_fb_data_type *mfd)
 
 	dma2_cfg_reg = DMA_PACK_ALIGN_LSB |
 		    DMA_OUT_SEL_AHB | DMA_IBUF_NONCONTIGUOUS;
-
+mddi_samsung_position();
 #ifdef CONFIG_FB_MSM_MDP22
 	dma2_cfg_reg |= DMA_PACK_TIGHT;
 #endif
@@ -125,6 +125,10 @@ static void mdp_dma2_update_lcd(struct msm_fb_data_type *mfd)
 						   iBuf->dma_w - 1, iBuf->dma_y,
 						   iBuf->dma_h - 1);
 #endif
+				iBuf->dma_x = 0;
+    			iBuf->dma_y = 0;
+    			iBuf->dma_w = 320;
+    			iBuf->dma_h = 480;
 			} else {
 				dma2_cfg_reg |=
 				    DMA_MDDI_DMAOUT_LCD_SEL_SECONDARY;
@@ -556,6 +560,8 @@ void mdp_dma_pan_update(struct fb_info *info)
 void mdp_refresh_screen(unsigned long data)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)data;
+	
+	mddi_samsung_position();
 
 	if ((mfd->sw_currently_refreshing) && (mfd->sw_refreshing_enable)) {
 		init_timer(&mfd->refresh_timer);
