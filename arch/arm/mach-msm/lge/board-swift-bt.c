@@ -1,6 +1,6 @@
 /* arch/arm/mach-msm/lge/board-swift-bt.c
  * Copyright (C) 2009 LGE, Inc.
- *
+ * miroslav_mm (c) myroslavmm@gmail.com
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -50,7 +50,7 @@ static unsigned bt_config_power_off[] = {
 	GPIO_CFG(BT_RESET_N, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* RESET_N */	
 };
 
-static int thunderg_bluetooth_toggle_radio(void *data, bool state)
+static int swift_bluetooth_toggle_radio(void *data, bool state)
 {
 	int ret;
 	int (*power_control)(int enable);
@@ -60,11 +60,10 @@ static int thunderg_bluetooth_toggle_radio(void *data, bool state)
 	return ret;
 }
 
-static int thunderg_bluetooth_power(int on)
+static int swift_bluetooth_power(int on)
 {
 	int pin, rc;
 
-	
 	printk(KERN_DEBUG "%s\n", __func__);
 	printk( "%s %d\n", __func__, on);
 
@@ -108,15 +107,15 @@ static int thunderg_bluetooth_power(int on)
 	return 0;
 }
 
-static struct bluetooth_platform_data thunderg_bluetooth_data = {
-	.bluetooth_power = thunderg_bluetooth_power,
-	.bluetooth_toggle_radio = thunderg_bluetooth_toggle_radio,
+static struct bluetooth_platform_data swift_bluetooth_data = {
+	.bluetooth_power = swift_bluetooth_power,
+	.bluetooth_toggle_radio = swift_bluetooth_toggle_radio,
 };
 
 static struct platform_device msm_bt_power_device = {
 	.name = "bt_power",
 	.dev = {
-		.platform_data = &thunderg_bluetooth_data,
+		.platform_data = &swift_bluetooth_data,
 	},		
 };
 
@@ -154,7 +153,7 @@ static struct resource bluesleep_resources[] = {
 	},
 };
 
-static struct bluesleep_platform_data thunderg_bluesleep_data = {
+static struct bluesleep_platform_data swift_bluesleep_data = {
 	.bluetooth_port_num = 0,
 };
 
@@ -164,7 +163,7 @@ static struct platform_device msm_bluesleep_device = {
 	.num_resources	= ARRAY_SIZE(bluesleep_resources),
 	.resource	= bluesleep_resources,
 	.dev = {
-		.platform_data = &thunderg_bluesleep_data,
+		.platform_data = &swift_bluesleep_data,
 	},	
 };
 
