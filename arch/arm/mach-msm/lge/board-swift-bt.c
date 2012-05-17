@@ -79,8 +79,8 @@ static int swift_bluetooth_power(int on)
 			}
 		}
         //Turn Bluetooth Power On if and only if not turned on by WLAN yet.
-        if (!gpio_get_value(CONFIG_BCM4325_GPIO_WL_REGON)) //#23
-		    gpio_set_value(CONFIG_BCM4325_GPIO_WL_REGON, 1); //#23
+        if (!gpio_get_value(CONFIG_BCM4325_GPIO_WL_REGON)) //#21
+		    gpio_set_value(CONFIG_BCM4325_GPIO_WL_REGON, 1); //#21
 		mdelay(100);
 		gpio_set_value(BT_RESET_N, 0);
 		mdelay(100);
@@ -90,7 +90,7 @@ static int swift_bluetooth_power(int on)
 	} else {
         //Turn Bluetooth Power Off if and only if not used by WLAN anymore.
         if (!gpio_get_value(CONFIG_BCM4325_GPIO_WL_RESET)) //#93
-         gpio_set_value(CONFIG_BCM4325_GPIO_WL_REGON, 0); //#23
+         gpio_set_value(CONFIG_BCM4325_GPIO_WL_REGON, 0); //#21
 
 		gpio_set_value(BT_RESET_N, 0);
 		for (pin = 0; pin < ARRAY_SIZE(bt_config_power_off); pin++) {
@@ -123,9 +123,9 @@ static struct platform_device msm_bt_power_device = {
 static void __init bt_power_init(void)
 {
 /* LGE_CHANGE_S, [kidong0420.kim@lge.com] , 2010-06-18, for current consumption*/
-  gpio_set_value(23, 1);
+  gpio_set_value(21, 1);
   ssleep(1); /* 1 sec */
-  gpio_set_value(23, 0);
+  gpio_set_value(21, 0);
 /* LGE_CHANGE_E, [kidong0420.kim@lge.com] , 2010-06-18, for current consumption*/
 }
 #else
