@@ -91,10 +91,11 @@ static void config_gpio_table(uint32_t *table, int len)
 	}
 }
 
-void config_camera_on_gpios(void)
+int config_camera_on_gpios(void)
 {
 	config_gpio_table(camera_on_gpio_table,
 		ARRAY_SIZE(camera_on_gpio_table));
+	return 0;
 }
 
 void config_camera_off_gpios(void)
@@ -105,7 +106,7 @@ void config_camera_off_gpios(void)
 
 int camera_power_on (void)
 {
-	int rc;
+	int rc = 0;
 	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();
@@ -115,7 +116,7 @@ int camera_power_on (void)
 		mdelay(50);
 	}
 
-	
+
 	/* clear RESET, PWDN to Low*/
 	gpio_set_value(GPIO_CAM_RESET, 0);
 	gpio_set_value(GPIO_CAM_PWDN, 0);
@@ -137,7 +138,7 @@ int camera_power_on (void)
 	mdelay(5); 
 	/*Nstandby high*/
 	gpio_set_value(GPIO_CAM_PWDN, 1);
-	
+
 	mdelay(8);  // T2 
 
 	camera_power_state = CAM_POWER_ON;
@@ -151,7 +152,7 @@ int camera_power_on (void)
 
 int camera_power_off (void)
 {
-	int rc;
+	int rc = 0;
 	struct vreg *vreg_mmc;
 
 	camera_power_mutex_lock();

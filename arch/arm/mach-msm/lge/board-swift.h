@@ -123,7 +123,7 @@ int camera_power_on(void);
 int camera_power_off(void);
 
 /* interface functions */
-void config_camera_on_gpios(void);
+int config_camera_on_gpios(void);
 void config_camera_off_gpios(void);
 void camera_power_mutex_lock(void);
 void camera_power_mutex_unlock(void);
