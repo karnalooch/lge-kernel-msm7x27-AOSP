@@ -404,6 +404,9 @@ struct android_usb_platform_data android_usb_pdata = {
 #endif /* CONFIG_USB_ANDROID */
 
 static struct platform_device *devices[] __initdata = {
+#ifdef CONFIG_LGE_UART3
+	&msm_device_uart3,
+#endif /* CONFIG_LGE_UART3 */
 	&msm_device_smd,
 	&msm_device_dmov,
 	&msm_device_nand,
