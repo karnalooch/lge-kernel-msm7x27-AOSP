@@ -94,6 +94,13 @@ config LGE_DIAGTEST
 	help
 	  LGE diag test mode
 
+config LGE_UART3
+	bool "Enable UART3 debug port"
+	default n
+	depends on MACH_LGE
+	help
+	 Enable UART3 for debugging throw pins near SIM
+
 config LGE_MTD_DIRECT_ACCESS
 	tristate "Support LGE mtd direct access apis"
 	default n
