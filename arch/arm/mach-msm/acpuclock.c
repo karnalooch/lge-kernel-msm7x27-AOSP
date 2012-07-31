@@ -63,8 +63,6 @@ struct clock_state {
 	uint32_t			acpu_switch_time_us;
 	uint32_t			max_speed_delta_khz;
 	uint32_t			vdd_switch_time_us;
-	unsigned long			power_collapse_khz;
-	unsigned long			wait_for_irq_khz;	
 	unsigned long			max_axi_khz;
 };
 
@@ -208,30 +206,30 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200[] = {
 	{ 1, 122880, ACPU_PLL_1, 1, 1,  61440, 1, 3,  61440 },
 	{ 0, 200000, ACPU_PLL_2, 2, 5,  66667, 2, 4,  61440 },
 	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 4,  61440 },
-	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 5, 122880 },
-	{ 0, 400000, ACPU_PLL_2, 2, 2, 133333, 2, 5, 122880 },
-	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 6, 122880 },
-	{ 1, 600000, ACPU_PLL_2, 2, 1, 200000, 2, 7, 122880 },
+	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 5, 160000 },
+	{ 0, 400000, ACPU_PLL_2, 2, 2, 133333, 2, 5, 160000 },
+	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 6, 160000 },
+	{ 1, 600000, ACPU_PLL_2, 2, 1, 200000, 2, 7, 200000 },
 #ifdef CONFIG_MSM7X27_OVERCLOCK
-	{ 1, 729600, ACPU_PLL_0, 4, 0, 182400, 3, 7, 122880 },
-	{ 1, 744000, ACPU_PLL_0, 4, 0, 186000, 3, 7, 122880 },
-	{ 1, 768000, ACPU_PLL_0, 4, 0, 192000, 3, 7, 122880 },
-	{ 1, 787200, ACPU_PLL_0, 4, 0, 196800, 3, 7, 122880 },
-	{ 1, 800000, ACPU_PLL_0, 4, 0, 200000, 3, 7, 122880 },
-	{ 1, 806400, ACPU_PLL_0, 4, 0, 201600, 3, 7, 122880 },
-	{ 1, 825600, ACPU_PLL_0, 4, 0, 206400, 3, 7, 122880 },
-	{ 1, 844800, ACPU_PLL_0, 4, 0, 211200, 3, 7, 122880 },
-	{ 1, 852000, ACPU_PLL_0, 4, 0, 213000, 3, 7, 122880 },
-	{ 1, 864000, ACPU_PLL_0, 4, 0, 216000, 3, 7, 122880 },
-	{ 1, 880000, ACPU_PLL_0, 4, 0, 220000, 3, 7, 122880 },
-	{ 1, 892000, ACPU_PLL_0, 4, 0, 223000, 3, 7, 122880 },
-	{ 1, 900000, ACPU_PLL_0, 4, 0, 225000, 3, 7, 122880 },
-	{ 1, 915000, ACPU_PLL_0, 4, 0, 228750, 3, 7, 122880 },
-	{ 1, 928000, ACPU_PLL_0, 4, 0, 232000, 3, 7, 122880 },
-	{ 1, 952000, ACPU_PLL_0, 4, 0, 238000, 3, 7, 122880 },
-	{ 1, 976000, ACPU_PLL_0, 4, 0, 244000, 3, 7, 122880 },
-	{ 1, 985000, ACPU_PLL_0, 4, 0, 246250, 3, 7, 122880 },
-	{ 1, 1000000, ACPU_PLL_0, 4, 0, 250000, 3, 7, 122880 },
+	{ 1, 729600, ACPU_PLL_0, 4, 0, 182400, 1, 7, 200000 },
+	{ 1, 744000, ACPU_PLL_0, 4, 0, 186000, 1, 7, 200000 },
+	{ 1, 768000, ACPU_PLL_0, 4, 0, 192000, 1, 7, 200000 },
+	{ 1, 787200, ACPU_PLL_0, 4, 0, 196800, 1, 7, 200000 },
+	{ 1, 800000, ACPU_PLL_0, 4, 0, 200000, 1, 7, 200000 },
+	{ 1, 806400, ACPU_PLL_0, 4, 0, 201600, 1, 7, 200000 },
+	{ 1, 825600, ACPU_PLL_0, 4, 0, 206400, 1, 7, 200000 },
+	{ 1, 844800, ACPU_PLL_0, 4, 0, 211200, 1, 7, 200000 },
+	{ 1, 852000, ACPU_PLL_0, 4, 0, 213000, 1, 7, 200000 },
+	{ 1, 864000, ACPU_PLL_0, 4, 0, 216000, 1, 7, 200000 },
+	{ 1, 880000, ACPU_PLL_0, 4, 0, 220000, 1, 7, 200000 },
+	{ 1, 892000, ACPU_PLL_0, 4, 0, 223000, 1, 7, 200000 },
+	{ 1, 900000, ACPU_PLL_0, 4, 0, 225000, 1, 7, 200000 },
+	{ 1, 915000, ACPU_PLL_0, 4, 0, 228750, 1, 7, 200000 },
+	{ 1, 928000, ACPU_PLL_0, 4, 0, 232000, 1, 7, 200000 },
+	{ 1, 952000, ACPU_PLL_0, 4, 0, 238000, 1, 7, 200000 },
+	{ 1, 976000, ACPU_PLL_0, 4, 0, 244000, 1, 7, 200000 },
+	{ 1, 985000, ACPU_PLL_0, 4, 0, 246250, 1, 7, 200000 },
+	{ 1, 1000000, ACPU_PLL_0, 4, 0, 250000, 1, 7, 200000 },
 #endif
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0} }
 };
@@ -481,11 +479,12 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	/* Program clock source and divider */
 	reg_clkctl = readl(A11S_CLK_CNTL_ADDR);
 	reg_clkctl &= ~(0xFF << (8 * src_sel));
-	reg_clkctl |=a11_div;
 	reg_clkctl |= hunt_s->a11clk_src_sel << (4 + 8 * src_sel);
-
-	reg_clkctl |=a11_div;
+#ifdef CONFIG_MSM7X27_OVERCLOCK
+	reg_clkctl |= a11_div << (0 + 8 * src_sel);
+#else
 	reg_clkctl |= hunt_s->a11clk_src_div << (0 + 8 * src_sel);
+#endif
 	writel(reg_clkctl, A11S_CLK_CNTL_ADDR);
 
 	/* Program clock source selection */
@@ -981,8 +980,6 @@ void __init msm_acpu_clock_init(struct msm_acpu_clock_platform_data *clkdata)
 	drv_state.acpu_switch_time_us = clkdata->acpu_switch_time_us;
 	drv_state.max_speed_delta_khz = clkdata->max_speed_delta_khz;
 	drv_state.vdd_switch_time_us = clkdata->vdd_switch_time_us;
-	drv_state.power_collapse_khz = clkdata->power_collapse_khz;
-	drv_state.wait_for_irq_khz = clkdata->wait_for_irq_khz;	
 	drv_state.max_axi_khz = clkdata->max_axi_khz;
 	acpu_freq_tbl_fixup();
 	precompute_stepping();

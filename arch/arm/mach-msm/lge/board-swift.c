@@ -3,7 +3,7 @@
  * Copyright (c) 2008-2009, Code Aurora Forum. All rights reserved.
  * Copyright (c) 2010 LGE. All rights reserved.
  * Author: Brian Swetland <swetland@google.com>
- *
+ * Author: miroslav_mm (c) myroslavmm@gmail.com
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -70,7 +70,6 @@
 #include <mach/board_lge.h>
 #include "board-swift.h"
 
-//void map_zero_page_strongly_ordered(void);
 void __init swift_init_timed_vibrator(void);
 
 /* board-specific pm tuning data definitions */
@@ -425,8 +424,6 @@ static struct msm_acpu_clock_platform_data msm7x2x_clock_data = {
 	.acpu_switch_time_us = 50,
 	.max_speed_delta_khz = 400000,
 	.vdd_switch_time_us = 62,
-	.power_collapse_khz = 19200000,
-	.wait_for_irq_khz = 128000000,
 	.max_axi_khz = 200000,
 };
 
@@ -486,6 +483,7 @@ static void __init msm7x2x_init(void)
 	lge_add_lcd_devices();
 	lge_add_btpower_devices();
 	lge_add_mmc_devices();
+	lge_add_wlan_devices();
 	lge_add_input_devices();
 	lge_add_misc_devices();
 	lge_add_pm_devices();
