@@ -1,8 +1,9 @@
 config BCM4325
 	tristate "Broadcom BCM4325 wireless support"
+	depends on WLAN
+	default m
 	select WIRELESS_EXT
 	select WEXT_PRIV
-	select WEXT_SPY
 	---help---
 	  This is a driver for the Broadcom 4325 wireless chip.
 
@@ -18,7 +19,7 @@ config LGE_BCM432X_PATCH
 
 config BCM4325_GPIO_BT_RESET
 	int "GPIO BT_RESET"
-	default 123
+	default 96
 	depends on BCM4325
 
 config BCM4325_GPIO_WL_RESET
@@ -28,12 +29,12 @@ config BCM4325_GPIO_WL_RESET
 
 config BCM4325_GPIO_WL_WAKE
 	int "GPIO WL_WAKE"
-	default 153
+	default 92
 	depends on BCM4325
 
 config BCM4325_GPIO_WL_REGON
 	int "GPIO WL_REGON"
-	default 23
+	default 21
 	depends on BCM4325
 
 config BRCM_LGE_WL_HOSTWAKEUP
@@ -84,5 +85,5 @@ config BRCM_USE_SOFTAP
 
 config BRCM_USE_STATIC_BUF
 	bool "Use static buff of osl_malloc"
-	default n
+	default y
 	depends on BCM4325
