@@ -38,7 +38,6 @@
 #define GPIO_SD_DETECT_N	49
 #define GPIO_MMC_COVER_DETECT	19
 #define VREG_SD_LEVEL		2850
-
 #endif
 
 /* touch-screen macros */

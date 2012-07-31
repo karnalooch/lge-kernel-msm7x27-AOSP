@@ -50,7 +50,7 @@
 
 #ifdef CONFIG_ARCH_MSM7X27
 #ifdef CONFIG_MACH_MSM7X27_SWIFT
-#define MSM_PMEM_MDP_SIZE	0x1700000
+#define MSM_PMEM_MDP_SIZE	0xC3D000
 #define MSM_PMEM_ADSP_SIZE	0xAE4000
 #else
 #define MSM_PMEM_MDP_SIZE	0x1B76000
@@ -476,6 +476,7 @@ void __init lge_add_input_devices(void);
 void __init lge_add_lcd_devices(void);
 void __init lge_add_btpower_devices(void);
 void __init lge_add_mmc_devices(void);
+void __init lge_add_wlan_devices(void);
 void __init lge_add_misc_devices(void);
 void __init lge_add_gpio_i2c_device(gpio_i2c_init_func_t *init_func);
 void __init lge_add_gpio_i2c_devices(void);

@@ -31,6 +31,7 @@ obj-$(CONFIG_MACH_MSM7X27_THUNDERG) += board-thunderg-pm.o
 
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-mmc.o
+obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-wlan.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-snd.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-panel.o
 obj-$(CONFIG_MACH_MSM7X27_SWIFT) += board-swift-bt.o
