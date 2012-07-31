@@ -1,6 +1,6 @@
 /* arch/arm/mach-msm/lge/board-swift-bt.c
  * Copyright (C) 2009 LGE, Inc.
- * miroslav_mm (c) myroslavmm@gmail.com
+ * Author: miroslav_mm (c) myroslavmm@gmail.com
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.

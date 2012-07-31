@@ -1,8 +1,7 @@
 /* kernel/arch/arm/mach-msm/lge/board-swift-vibrator.c
  *
  * (C) 2009 LGE, Inc.
- * miroslav_mm (c) myroslavmm@gmail.com
- *
+ * Author: miroslav_mm (c) myroslavmm@gmail.com
  * msm vibrator driver
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

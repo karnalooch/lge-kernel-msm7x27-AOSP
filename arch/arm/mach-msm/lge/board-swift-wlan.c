@@ -1,7 +1,7 @@
-/* arch/arm/mach-msm/lge/board-swift-mmc.c
+/* arch/arm/mach-msm/lge/board-swift-wlan.c
  * Copyright (C) 2010 LGE Corporation.
  * Author: SungEun Kim <cleaneye.kim@lge.com>
- *
+ * Author: miroslav_mm (c) myroslavmm@gmail.com
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.

@@ -1,6 +1,6 @@
 /* linux/arch/arm/mach-msm/lge/board-swift-snd.c
  * Copyright (C) 2010 LGE.
- * miroslav_mm (c) myroslavmm@gmail.com
+ * Author: miroslav_mm (c) myroslavmm@gmail.com
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
