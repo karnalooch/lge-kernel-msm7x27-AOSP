@@ -2,7 +2,8 @@
  *
  * Copyright (C) 2009-2011 LGE Inc.
  * Author : MoonCheol Kang <knight0708@lge.com>
- *               2012 Henning Heinold <heinold@inf.fu-berlin.de> 
+ *          2012 Henning Heinold <heinold@inf.fu-berlin.de>
+ *          miroslav_mm (c) myroslavmm@gmail.com 
  * This software is licensed under the term of GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
