@@ -45,9 +45,9 @@
 MODULE_ALIAS("mmc:block");
 
 /*
- * max 32 partitions per card
+ * max 16 partitions per card
  */
-#define MMC_SHIFT	5
+#define MMC_SHIFT	4
 #define MMC_NUM_MINORS	(256 >> MMC_SHIFT)
 
 static DECLARE_BITMAP(dev_use, MMC_NUM_MINORS);
@@ -263,7 +263,6 @@ mmc_blk_set_blksize(struct mmc_blk_data *md, struct mmc_card *card)
 
 	return 0;
 }
-
 
 static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 {

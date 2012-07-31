@@ -241,7 +241,7 @@ void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
 
 	mmc_start_request(host, mrq);
 
-	wait_for_completion(&complete);
+	wait_for_completion_io(&complete);
 }
 
 EXPORT_SYMBOL(mmc_wait_for_req);
@@ -293,7 +293,11 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
 	 * SDIO cards only define an upper 1 s limit on access.
 	 */
 	if (mmc_card_sdio(card)) {
+#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
+		data->timeout_ns = 2000000000;
+#else  /* oringin */
 		data->timeout_ns = 1000000000;
+#endif
 		data->timeout_clks = 0;
 		return;
 	}
@@ -328,7 +332,11 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
 			 * The limit is really 250 ms, but that is
 			 * insufficient for some crappy cards.
 			 */
+#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
+			limit_us = 500000;
+#else	/* origin */
 			limit_us = 300000;
+#endif
 		else
 			limit_us = 100000;
 
@@ -942,13 +950,8 @@ void mmc_power_up(struct mmc_host *host)
 	 * This delay should be sufficient to allow the power supply
 	 * to reach the minimum voltage.
 	 */
-/*LGE_UPDATE_S DYLEE */
-	mmc_delay(20);	
-/* mmc_delay(10);	*/
-/*LGE_UPDATE_E DYLEE */
-
-		host->ios.clock = host->f_min;
-
+	mmc_delay(30);
+	host->ios.clock = host->f_min;
 	host->ios.power_mode = MMC_POWER_ON;
 	mmc_set_ios(host);
 
@@ -956,10 +959,7 @@ void mmc_power_up(struct mmc_host *host)
 	 * This delay must be at least 74 clock sizes, or 1 ms, or the
 	 * time required to reach a stable voltage.
 	 */
-/*LGE_UPDATE_S DYLEE */
-/*	mmc_delay(20);	*/
- mmc_delay(10);	
-/*LGE_UPDATE_E DYLEE */
+	mmc_delay(10);
 }
 EXPORT_SYMBOL(mmc_power_up);
 
@@ -1128,23 +1128,7 @@ void mmc_rescan(struct work_struct *work)
 	u32 ocr;
 	int err;
 	int extend_wakelock = 0;
-	int ret;
-
 	unsigned long flags;
-
-	/*
-        * Add checking gpio pin status before initialization of bus.
-        * If the GPIO pin status is changed, check gpio pin status again.
-        * Should check until it's stable.
-        * fred.cho@lge.com, 2010-09-27
-        */
-	if (host->ops->get_status){
-		ret = host->ops->get_status(host);
-		if (ret == 1) {
-			mmc_schedule_delayed_work(&host->detect, HZ / 3);
-			return;
-		}
-	}
 
 	spin_lock_irqsave(&host->lock, flags);
 	if (host->rescan_disable) {
