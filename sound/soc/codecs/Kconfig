@@ -8,6 +8,17 @@ config SND_SOC_I2C_AND_SPI
 	default y if I2C=y
 	default y if SPI_MASTER=y
 
+config	SND_SOC_WM9090
+	bool "Amp Driver WM9090/9093"
+	default n
+	help
+	  Say Y here if you want the Driver WM9090/9093 is a high performance
+          low power audio subsystem, including headphone driver and Class AB/D
+          earpiece/speaker driver. The Class D speaker driver supports 650mW
+          output power at 3.6V, 1%THD.
+
+	  If you are unsure about this, say N here.
+
 config SND_SOC_ALL_CODECS
 	tristate "Build all ASoC CODEC drivers"
 	select SND_SOC_L3
@@ -66,7 +77,6 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM8993 if I2C
 	select SND_SOC_WM8994 if MFD_WM8994
 	select SND_SOC_WM9081 if I2C
-	select SND_SOC_WM9090 if I2C
 	select SND_SOC_WM9705 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9712 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
@@ -278,9 +288,6 @@ config SND_SOC_TPA6130A2
 	tristate
 
 config SND_SOC_WM2000
-	tristate
-
-config SND_SOC_WM9090
 	tristate
 
 config SND_SOC_TIMPANI
