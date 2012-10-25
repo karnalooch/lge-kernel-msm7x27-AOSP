@@ -24,6 +24,9 @@ void vreg_put(struct vreg *vreg);
 
 int vreg_enable(struct vreg *vreg);
 int vreg_disable(struct vreg *vreg);
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+int vreg_get_refcnt(struct vreg *vreg);
+#endif
 int vreg_set_level(struct vreg *vreg, unsigned mv);
 
 #endif

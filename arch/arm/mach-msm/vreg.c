@@ -123,6 +123,16 @@ int vreg_enable(struct vreg *vreg)
 }
 EXPORT_SYMBOL(vreg_enable);
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+int vreg_get_refcnt(struct vreg *vreg)
+{
+	int ret;
+	ret = (int)vreg->refcnt;
+	return ret;
+}
+EXPORT_SYMBOL(vreg_get_refcnt);
+#endif
+
 int vreg_disable(struct vreg *vreg)
 {
 	unsigned id = vreg->id;
