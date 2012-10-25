@@ -46,9 +46,6 @@ when       who     what, where, why
   #define VIDENC_CMD_DIS           0x000C
   #define VIDENC_CMD_DIGITAL_ZOOM  0x000D
 
-
-
-
 /*
  * Command to pass the frame message information to VIDENC
  */

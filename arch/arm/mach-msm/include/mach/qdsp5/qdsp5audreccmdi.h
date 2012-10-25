@@ -65,9 +65,6 @@ Notice that changes are listed in reverse chronological order.
 
 #define	AUDREC_CMD_TYPE_0_INDEX_WAV	0x0000
 #define	AUDREC_CMD_TYPE_0_INDEX_AAC	0x0001
-#define	AUDREC_CMD_TYPE_0_INDEX_AMRNB	0x000A
-#define	AUDREC_CMD_TYPE_0_INDEX_EVRC	0x000B
-#define	AUDREC_CMD_TYPE_0_INDEX_QCELP	0x000C
 
 #define AUDREC_CMD_TYPE_0_ENA		0x4000
 #define AUDREC_CMD_TYPE_0_DIS		0x0000

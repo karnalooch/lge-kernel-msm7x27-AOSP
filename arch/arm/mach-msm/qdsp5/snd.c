@@ -29,6 +29,12 @@
 #include <mach/board.h>
 #include <mach/msm_rpcrouter.h>
 #include <mach/debug_mm.h>
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)		
+#include <mach/gpio.h>
+#endif
+
+static uint32_t msm_snd_debug = 1;
+module_param_named(debug_mask, msm_snd_debug, uint, 0664);
 
 struct snd_ctxt {
 	struct mutex lock;
@@ -50,7 +56,6 @@ static struct snd_ctxt the_snd;
 #define RPC_SND_CB_PROG	0x31000002
 
 #define RPC_SND_VERS                    0x00020001
-#define RPC_SND_VERS2                    0x00030001
 
 #define SND_SET_DEVICE_PROC 2
 #define SND_SET_VOLUME_PROC 3
@@ -61,6 +66,189 @@ static struct snd_ctxt the_snd;
 //LGE_SND_UPDATE_S [
 #define SND_72XX_RPC_EXTCMD_PROC 40
 #define SND_AUDIO_CAL_PROC 41
+#define SND_SET_AMP_GAIN_PROC 46
+
+#define D(fmt, args...) printk(fmt, ##args)
+
+struct rpc_snd_set_amp_gain_param_args {
+     voc_codec_type voc_codec;
+     amp_gain_type gain_type;
+     int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+	 int get_param;
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+
+struct snd_set_set_amp_gain_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_amp_gain_param_args args;
+};
+
+extern int amp_write_register(char reg, int  val);
+extern int amp_read_register(char reg, int *ret);
+
+#define		SND_DEVICE_HANDSET						0
+#define		SND_DEVICE_STEREO_HEADSET				3  // FOR VOICE
+#define		SND_DEVICE_STEREO_HEADSET_AUDIO			2 // FOR MEDIA
+#define		SND_DEVICE_SPEAKER_AUDIO				5  // FOR MEDIA
+#define		SND_DEVICE_SPEAKER_PHONE				6  // FOR VOICE
+#define		SND_DEVICE_HEADSET_SPEAKER				7  // FOR both headset and speaker
+#define		SND_DEVICE_VOICE_RECORDER				8  // FOR VOICE RECORDER
+#define		SND_DEVICE_FM_RADIO_HEADSET_MEDIA		9  // FOR FM RADIO HEADSET MEDIA
+#define		SND_DEVICE_FM_RADIO_SPEAKER_MEDIA		10 // FOR FM RADIO HEADSET MEDIA MULTI
+#define		SND_DEVICE_BT_HEADSET					12 // FOR BT (SCO)
+#define		SND_DEVICE_A2DP_HEADSET					11 // FOR BT (A2DP)
+
+static void set_amp_gain(voc_codec_type voc_codec, amp_gain_type gain_type, int value)
+{
+	switch(voc_codec) {
+		case  SND_DEVICE_HANDSET:
+			D("voc_codec %d does not use the amp\n", voc_codec);
+			break;
+		case  SND_DEVICE_STEREO_HEADSET:
+	    case  SND_DEVICE_STEREO_HEADSET_AUDIO:
+		case  SND_DEVICE_FM_RADIO_HEADSET_MEDIA:
+			if ( gain_type == HPH){
+				amp_write_register(0x01, 0x000B); 				
+				amp_write_register(0x02, 0x60C0);				
+				amp_write_register(0x16, 0x0001);				
+				amp_write_register(0x18, 0x0002);				
+				amp_write_register(0x19, 0x0002);				
+				amp_write_register(0x18, 0x0102);
+				amp_write_register(0x2D, 0x0040);				
+				amp_write_register(0x2E, 0x0010);				
+				amp_write_register(0x03, 0x0030);				
+				amp_write_register(0x2F, 0x0000);				
+				amp_write_register(0x30, 0x0000);				
+				amp_write_register(0x16, 0x0000);				
+				amp_write_register(0x1C, 0x0039);				
+				amp_write_register(0x1D, 0x0139);				
+				amp_write_register(0x46, 0x0100);				
+				amp_write_register(0x49, 0x0100);	
+				
+			} else {
+				D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+			}
+			break;
+		case  SND_DEVICE_SPEAKER_PHONE:
+		case  SND_DEVICE_SPEAKER_AUDIO:
+		case  SND_DEVICE_FM_RADIO_SPEAKER_MEDIA:
+			if ( gain_type == SPK) {
+				amp_write_register(0x01, 0x000B);
+				amp_write_register(0x02, 0x6020);
+				amp_write_register(0x1A, 0x0002);
+				amp_write_register(0x1A, 0x0102);
+				amp_write_register(0x36, 0x0004);
+				amp_write_register(0x03, 0x0008);
+				amp_write_register(0x22, 0x0000);
+				amp_write_register(0x03, 0x0108);			
+				amp_write_register(0x25, 0x0160);
+				amp_write_register(0x17, 0x0002);
+				amp_write_register(0x01, 0x100B);				
+				
+			} else {
+				D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+			}
+			break;
+		case   SND_DEVICE_HEADSET_SPEAKER:
+			if ( gain_type == HPH) {
+				amp_write_register(0x01, 0x100B);
+				amp_write_register(0x02, 0x60C0);
+				amp_write_register(0x16, 0x0001);
+				amp_write_register(0x18, 0x0002);
+				amp_write_register(0x19, 0x0002);
+				amp_write_register(0x18, 0x0102);
+				amp_write_register(0x36, 0x0050);
+				amp_write_register(0x22, 0x0050);
+				amp_write_register(0x25, 0x0160);
+				amp_write_register(0x2D, 0x0040);
+				amp_write_register(0x2E, 0x0010);
+				amp_write_register(0x03, 0x0138);
+				amp_write_register(0x2F, 0x0000);				
+				amp_write_register(0x30, 0x0000);
+				amp_write_register(0x16, 0x0000);
+				amp_write_register(0x1C, 0x0039);
+				amp_write_register(0x1D, 0x0139);
+				amp_write_register(0x46, 0x0100);
+				amp_write_register(0x49, 0x0100);
+
+			}
+			else if ( gain_type == SPK) {
+				amp_write_register(0x01, 0x000B);
+				amp_write_register(0x02, 0x6020);
+				amp_write_register(0x1A, 0x0002);
+				amp_write_register(0x1A, 0x0102);
+				amp_write_register(0x36, 0x0004);
+				amp_write_register(0x03, 0x0008);
+				amp_write_register(0x22, 0x0000);
+				amp_write_register(0x03, 0x0108);			
+				amp_write_register(0x25, 0x0160);
+				amp_write_register(0x17, 0x0002);
+				amp_write_register(0x01, 0x100B);	
+
+			} else {
+				D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+			}
+
+			break;
+		default :
+			 if (msm_snd_debug & 1)
+				printk("SWIFT : voc_codec %d does not support AMP cal tool\n", voc_codec);
+			 
+	}
+}
+ 
+static int get_amp_gain(voc_codec_type voc_codec, amp_gain_type gain_type)
+{
+	int ret = 0;
+
+	switch(voc_codec) {
+		case  SND_DEVICE_HANDSET:
+			D("voc_codec %d does not use the amp\n", voc_codec);
+			break;
+		case  SND_DEVICE_STEREO_HEADSET:
+		case  SND_DEVICE_STEREO_HEADSET_AUDIO:
+		case  SND_DEVICE_FM_RADIO_HEADSET_MEDIA:
+			if ( gain_type == HPH ){
+				/*
+				amp_read_register(0x02, (unsigned char *)&ret);
+				*/
+				D("amp_read : 0x02 => %x\n", ret);
+			} else {
+				D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+			}
+			break;
+		case  SND_DEVICE_SPEAKER_AUDIO:
+		case  SND_DEVICE_SPEAKER_PHONE:
+		case  SND_DEVICE_FM_RADIO_SPEAKER_MEDIA:
+			if ( gain_type == SPK ){
+				/*
+				amp_read_register(0x01, (unsigned char *)&ret);
+				*/
+				D("amp_read : 0x01 => %x\n", ret);
+			} else {
+				D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+			}
+			break;
+		case  SND_DEVICE_HEADSET_SPEAKER:
+				if ( gain_type == HPH ){
+					//amp_read_register(0x02, &ret);
+					;//D("amp_read : 0x02 => %x\n", ret);
+				} else if ( gain_type == SPK ) {
+					//amp_read_register(0x01, &ret);
+					;//D("amp_read : 0x01 => %x\n", ret);
+				} else {
+					;//D("voc_codec %d does not use gain_type[%d]\n",voc_codec, gain_type);
+				}
+				break;
+
+			break;
+		default :
+			printk("SWIFT : voc_codec %d does not support AMP cal tool\n", voc_codec);
+			return -EINVAL;
+	}
+	return ret;
+}
 //LGE_SND_UPDATE_E ]
 
 struct rpc_snd_set_device_args {
@@ -211,6 +399,16 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct snd_set_volume_msg vmsg;
 	struct snd_avc_ctl_msg avc_msg;
 	struct snd_agc_ctl_msg agc_msg;
+
+//LGE_SND_UPDATE_S [
+	struct msm_snd_set_amp_gain_param ampgain;
+	struct snd_set_set_amp_gain_param_msg amsg;
+
+	struct snd_set_amp_gain_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_gainvalue;
+	}arep;
+//LGE_SND_UPDATE_E ]
 
 //LGE_SND_UPDATE_S [
 	struct snd_72xx_rpc_extcmd_msg rpc_extcmd_msg;
@@ -424,6 +622,41 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			SND_SET_FM_RADIO_VOLUME_PROC,
 			&fmrmsg, sizeof(fmrmsg), 5 * HZ);
 		break;
+
+	case SND_SET_AMP_GAIN:
+		if (copy_from_user(&ampgain, (void __user *) arg, sizeof(ampgain))) {
+			pr_err("snd_ioctl set amp_gain: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		amsg.args.voc_codec = cpu_to_be32(ampgain.voc_codec);
+		amsg.args.gain_type = cpu_to_be32(ampgain.gain_type);
+		amsg.args.get_flag = cpu_to_be32(ampgain.get_flag);
+		amsg.args.get_param = cpu_to_be32(ampgain.value);
+		amsg.args.cb_func = -1;
+		amsg.args.client_data = 0;
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_AMP_GAIN_PROC,
+			&amsg, sizeof(amsg),&arep, sizeof(arep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			ampgain.get_param = be32_to_cpu(arep.get_gainvalue);
+			printk(KERN_INFO "%s:rx vol ->%d\n", __func__, ampgain.get_param);
+			if (copy_to_user((void __user *)arg, &ampgain, sizeof(ampgain))) {
+				pr_err("snd_ioctl get pad value: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+			
+		if (copy_to_user((void __user *)arg, &ampgain, sizeof(ampgain))) {
+			pr_err("snd_ioctl get amp gain: invalid write pointer.\n");
+			rc = -EFAULT;
+		}
+		break;		
+
 //LGE_SND_UPDATE_E ]
 
 	default:
@@ -474,14 +707,6 @@ static int snd_open(struct inode *inode, struct file *file)
 			snd->ept = msm_rpc_connect_compatible(RPC_SND_PROG,
 					RPC_SND_VERS, 0);
 			if (IS_ERR(snd->ept)) {
-				MM_DBG("connect failed with current VERS \
-					= %x, trying again with another API\n",
-					RPC_SND_VERS2);
-				snd->ept =
-					msm_rpc_connect_compatible(RPC_SND_PROG,
-							RPC_SND_VERS2, 0);
-			}
-			if (IS_ERR(snd->ept)) {
 				rc = PTR_ERR(snd->ept);
 				snd->ept = NULL;
 				MM_ERR("failed to connect snd svc\n");
@@ -508,13 +733,6 @@ static int snd_sys_open(void)
 	if (snd_sys->ept == NULL) {
 		snd_sys->ept = msm_rpc_connect_compatible(RPC_SND_PROG,
 			RPC_SND_VERS, 0);
-		if (IS_ERR(snd_sys->ept)) {
-			MM_DBG("connect failed with current VERS \
-				= %x, trying again with another API\n",
-				RPC_SND_VERS2);
-			snd_sys->ept = msm_rpc_connect_compatible(RPC_SND_PROG,
-					RPC_SND_VERS2, 0);
-		}
 		if (IS_ERR(snd_sys->ept)) {
 			rc = PTR_ERR(snd_sys->ept);
 			snd_sys->ept = NULL;

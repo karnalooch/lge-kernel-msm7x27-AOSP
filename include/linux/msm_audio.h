@@ -354,7 +354,6 @@ struct msm_acdb_cmd_device {
 struct msm_snd_72xx_rpc_extcmd_config {
     uint32_t rpc_extcmd;
     uint32_t option;
-
     uint32_t result;    
 };
 
@@ -367,7 +366,6 @@ struct msm_snd_audio_cal_config {
     uint32_t nIndex;
     uint32_t nSubIndex;
     uint32_t nItem;
-
     uint32_t result;
 };
 
@@ -378,5 +376,64 @@ struct msm_snd_set_fm_radio_vol_param {
 };
 
 #define SND_SET_FM_RADIO_VOLUME _IOWR(SND_IOCTL_MAGIC, 17, int *)
+
+typedef enum {
+  VOC_CODEC_DEFAULT,
+  VOC_CODEC_ON_CHIP_0				= VOC_CODEC_DEFAULT+0, 	/* On Chip Codec Channel 1 */
+  VOC_CODEC_ON_CHIP_1				= VOC_CODEC_DEFAULT+1,  	/* On Chip Codec Channel 2          */
+  VOC_CODEC_STEREO_HEADSET			= VOC_CODEC_DEFAULT+2,  	/* On Chip Codec Channels 1 and 2   */
+  VOC_CODEC_ON_CHIP_AUX				= VOC_CODEC_DEFAULT+3,  	/* On Chip Codec Aux. Channel       */
+  VOC_CODEC_SPEAKER				= VOC_CODEC_DEFAULT+4,  	/* Speaker Phone                    */
+  VOC_CODEC_BT_INTERCOM				= VOC_CODEC_DEFAULT+5,  	/* BT Intercom                      */
+  VOC_CODEC_BT_OFF_BOARD			= VOC_CODEC_DEFAULT+6,  	/* External BT codec                */
+  VOC_CODEC_BT_AG_LOCAL_AUDIO			= VOC_CODEC_DEFAULT+7,  	/* BT local audio path              */
+  VOC_CODEC_BT_A2DP				= VOC_CODEC_DEFAULT+8,
+  VOC_CODEC_BT_A2DP_SCO				= VOC_CODEC_DEFAULT+9,
+  VOC_CODEC_A2DP_TX_I2S				= VOC_CODEC_DEFAULT+10,   
+  VOC_CODEC_A2DP_TX_I2S_RX_LINEOUT		= VOC_CODEC_DEFAULT+11,
+  VOC_CODEC_OFF_BOARD				= VOC_CODEC_DEFAULT+12, 	/* Aux. Codec                       */
+  VOC_CODEC_SDAC				= VOC_CODEC_DEFAULT+13, 	/* Stereo DAC                       */
+  VOC_CODEC_RX_EXT_SDAC_TX_INTERNAL		= VOC_CODEC_DEFAULT+14, 	/* External Stereo DAC and Tx Internal */
+  VOC_CODEC_IN_STEREO_SADC_OUT_MONO_HANDSET	= VOC_CODEC_DEFAULT+15, 	/* Stereo line in Mono out    */
+  VOC_CODEC_IN_STEREO_SADC_OUT_STEREO_HEADSET   = VOC_CODEC_DEFAULT+16, 	/* Stereo line in STEREO out  */
+  VOC_CODEC_TX_INT_SADC_RX_EXT_AUXPCM		= VOC_CODEC_DEFAULT+17, 	/* Stereo line in, AUX_PCM out*/ 
+  VOC_CODEC_EXT_STEREO_SADC_OUT_MONO_HANDSET	= VOC_CODEC_DEFAULT+18, 	/* Stereo line in Mono out   */
+  VOC_CODEC_EXT_STEREO_SADC_OUT_STEREO_HEADSET 	= VOC_CODEC_DEFAULT+19, 	/* Stereo line in STEREO out */
+  VOC_CODEC_TTY_ON_CHIP_1			= VOC_CODEC_DEFAULT+20, 	/* TTY On Chip Codec Channel 2      */
+  VOC_CODEC_TTY_OFF_BOARD			= VOC_CODEC_DEFAULT+21, 	/* TTY Aux. Codec                   */
+  VOC_CODEC_TTY_VCO				= VOC_CODEC_DEFAULT+22, 	/* Voice Carry-Over TTY             */
+  VOC_CODEC_TTY_HCO				= VOC_CODEC_DEFAULT+23, 	/* Hearing Carry-Over TTY           */
+  VOC_CODEC_USB					= VOC_CODEC_DEFAULT+24, 	/* USB off-board codec              */
+  VOC_CODEC_STEREO_USB				= VOC_CODEC_DEFAULT+25, 	/* Stereo USB off-board codec       */
+  VOC_CODEC_ON_CHIP_0_DUAL_MIC			= VOC_CODEC_DEFAULT+26, 	/* On Chip dual mic stereo channels */
+  VOC_CODEC_BT_CONFERENCE                       = VOC_CODEC_DEFAULT+27,         /* BT conference */
+  VOC_CODEC_SPEAKER_DUAL_MIC                    = VOC_CODEC_DEFAULT+28,         /*  Speaker_phone with ISS         */  
+  VOC_CODEC_SPEAKER_AUDIO		= VOC_CODEC_DEFAULT+29,
+  VOC_CODEC_HEADSET_SPEAKER     = VOC_CODEC_DEFAULT+30,
+  VOC_CODEC_VOICE_RECORDER		= VOC_CODEC_DEFAULT+31,
+  VOC_CODEC_FM_RADIO_HEADSET_MEDIA = VOC_CODEC_DEFAULT+32,
+  VOC_CODEC_FM_RADIO_HEADSET_MEDIA_MULTI = VOC_CODEC_DEFAULT+33,
+  VOC_CODEC_STEREO_HEADSET_AUDIO = VOC_CODEC_DEFAULT+34,
+  VOC_CODEC_STEREO_HEADSET_LOOPBACK = VOC_CODEC_DEFAULT+35,
+  VOC_CODEC_STEREO_HEADSET_WITHOUT_MIC = VOC_CODEC_DEFAULT+36,
+  VOC_CODEC_MAX					= VOC_CODEC_DEFAULT+37,
+  VOC_CODEC_NONE				= VOC_CODEC_DEFAULT+38,         /* Place Holder                     */
+  VOC_CODEC_32BIT_DUMMY                         = 0x7FFFFFFF
+} voc_codec_type;
+
+typedef enum {
+  HPH = 0,
+  SPK,
+} amp_gain_type;
+
+struct msm_snd_set_amp_gain_param {
+     voc_codec_type voc_codec;
+     amp_gain_type gain_type;
+     int32_t value;
+     int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+	 int get_param;
+};
+
+#define SND_SET_AMP_GAIN _IOWR(SND_IOCTL_MAGIC, 13, struct msm_snd_set_amp_gain_param *)
 //LGE_SND_UPDATE_E ]
 #endif
