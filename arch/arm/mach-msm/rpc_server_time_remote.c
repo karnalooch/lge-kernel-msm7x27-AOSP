@@ -21,8 +21,6 @@
 #include <mach/msm_rpcrouter.h>
 #include "rpc_server_time_remote.h"
 #include <linux/rtc.h>
-#include <linux/android_alarm.h>
-#include <linux/rtc-msm.h>
 
 /* time_remote_mtoa server definitions. */
 
@@ -101,8 +99,6 @@ send_reply:
 static int handle_rpc_call(struct msm_rpc_server *server,
 			   struct rpc_request_hdr *req, unsigned len)
 {
-	struct timespec ts, tv;
-
 	switch (req->procedure) {
 	case RPC_TIME_REMOTE_MTOA_NULL:
 		return 0;
@@ -117,34 +113,7 @@ static int handle_rpc_call(struct msm_rpc_server *server,
 		       "\tstamp = %lld\n",
 		       args->tick, args->stamp);
 
-		getnstimeofday(&ts);
-		if (msmrtc_is_suspended()) {
-			int64_t now, sleep, tick_at_suspend, sclk_max;
-
-			now = msm_timer_get_sclk_time(&sclk_max);
-			tick_at_suspend = msmrtc_get_tickatsuspend();
-
-			if (now && tick_at_suspend) {
-				if (now < tick_at_suspend) {
-					sleep = sclk_max - tick_at_suspend +
-						now;
-				} else {
-					sleep = now - tick_at_suspend;
-				}
-
-				timespec_add_ns(&ts, sleep);
-				msmrtc_set_tickatsuspend(now);
-			} else
-				pr_err("%s: Invalid ticks from SCLK"
-					"now=%lld tick_at_suspend=%lld",
-					__func__, now, tick_at_suspend);
-
-		}
-
 		rtc_hctosys();
-		getnstimeofday(&tv);
-		/* Update the alarm information with the new time info. */
-		alarm_update_timedelta(ts, tv);
 		return 0;
 	}
 

@@ -21,7 +21,6 @@
 #include <linux/init.h>
 #include <linux/types.h>
 #include <linux/slab.h>
-#include <linux/android_alarm.h>
 
 #include <linux/rtc.h>
 #include <linux/rtc-msm.h>
@@ -435,7 +434,6 @@ msmrtc_alarmtimer_expired(unsigned long _data,
 static void process_cb_request(void *buffer)
 {
 	struct rtc_cb_recv *rtc_cb = buffer;
-	struct timespec ts, tv;
 
 	rtc_cb->client_cb_id = be32_to_cpu(rtc_cb->client_cb_id);
 	rtc_cb->event = be32_to_cpu(rtc_cb->event);
@@ -455,33 +453,7 @@ static void process_cb_request(void *buffer)
 			rtc_cb->cb_info_data.tod_update.stamp,
 			rtc_cb->cb_info_data.tod_update.freq);
 
-		getnstimeofday(&ts);
-		if (atomic_read(&suspend_state.state)) {
-			int64_t now, sleep, sclk_max;
-			now = msm_timer_get_sclk_time(&sclk_max);
-
-			if (now && suspend_state.tick_at_suspend) {
-				if (now < suspend_state.tick_at_suspend) {
-					sleep = sclk_max -
-						suspend_state.tick_at_suspend
-						+ now;
-				} else {
-					sleep = now -
-						suspend_state.tick_at_suspend;
-				}
-
-				timespec_add_ns(&ts, sleep);
-				suspend_state.tick_at_suspend = now;
-			} else
-				pr_err("%s: Invalid ticks from SCLK"
-					"now=%lld tick_at_suspend=%lld",
-					__func__, now,
-					suspend_state.tick_at_suspend);
-		}
 		rtc_hctosys();
-		getnstimeofday(&tv);
-		/* Update the alarm information with the new time info. */
-		alarm_update_timedelta(ts, tv);
 
 	} else
 		pr_err("%s: Unknown event EVENT=%x\n",
