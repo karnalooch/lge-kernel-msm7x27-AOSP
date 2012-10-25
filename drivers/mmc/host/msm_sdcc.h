@@ -14,11 +14,6 @@
 #ifndef _MSM_SDCC_H
 #define _MSM_SDCC_H
 
-#define MSMSDCC_CRCI_SDC1	6
-#define MSMSDCC_CRCI_SDC2	7
-#define MSMSDCC_CRCI_SDC3	12
-#define MSMSDCC_CRCI_SDC4	13
-
 #define MMCIPOWER		0x000
 #define MCI_PWR_OFF		0x00
 #define MCI_PWR_UP		0x02
@@ -273,16 +268,14 @@ struct msmsdcc_host {
 
 	unsigned int	mci_irqenable;
 	unsigned int	dummy_52_needed;
-	unsigned int	dummy_52_sent;
+	unsigned int	dummy_52_state;
 	unsigned int	sdio_irq_disabled;
 	struct wake_lock	sdio_wlock;
 	struct wake_lock	sdio_suspend_wlock;
 	unsigned int    sdcc_suspending;
 
-	struct timer_list    check_timer;
 	unsigned int sdcc_irq_disabled;
 	struct timer_list req_tout_timer;
-	bool irq_wake_enabled;
 };
 
 int msmsdcc_set_pwrsave(struct mmc_host *mmc, int pwrsave);

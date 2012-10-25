@@ -640,12 +640,8 @@ static int mmc_sd_resume(struct mmc_host *host)
 		err = mmc_sd_init_card(host, host->ocr, host->card);
 
 		if (err) {
-			mmc_power_off(host);
 			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
 			       mmc_hostname(host), err, retries);
-			mmc_power_up(host);
-			mmc_select_voltage(host, host->ocr);
-			BUG_ON(!host->bus_ops->resume);
 			mdelay(5);
 			retries--;
 			continue;
@@ -688,7 +684,7 @@ static void mmc_sd_attach_bus_ops(struct mmc_host *host)
 {
 	const struct mmc_bus_ops *bus_ops;
 
-	if (!mmc_card_is_removable(host))
+	if (host->caps & MMC_CAP_NONREMOVABLE || !mmc_assume_removable)
 		bus_ops = &mmc_sd_ops_unsafe;
 	else
 		bus_ops = &mmc_sd_ops;

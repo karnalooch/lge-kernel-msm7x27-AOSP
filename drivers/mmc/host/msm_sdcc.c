@@ -53,28 +53,11 @@
 
 #include "msm_sdcc.h"
 
-#ifdef CONFIG_BCM4325_GPIO_WL_RESET
-#define WLAN_RESET_GPIO CONFIG_BCM4325_GPIO_WL_RESET
-#endif
-
-#ifdef CONFIG_BCM4329_GPIO_WL_RESET
-#define WLAN_RESET_GPIO CONFIG_BCM4329_GPIO_WL_RESET
-#endif
-
-#ifdef CONFIG_BCM4330_GPIO_WL_RESET
-#define WLAN_RESET_GPIO CONFIG_BCM4330_GPIO_WL_RESET
-#endif
-
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, for gpio_to_irq */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 #include <asm/gpio.h>
-
-#if defined(CONFIG_BCM4330) || defined(CONFIG_BCM4325) || defined(CONFIG_BCM4325_MODULE)
+/*LGE_CHANGE_S, [dongp.kim@lge.com], 2010-03-17, mmc_fmax is 24576000Hz for Wi-Fi */ 
 #define BRCM_WLAN_SLOT 2 // give 25MHz to SDIO I/F
-#else
-#define BRCM_WLAN_SLOT 100 // give 50MHz to SDIO I/F
-#endif
-
 #endif
 /* LGE_CHANGE_E [jisung.yang@lge.com] 2010-04-24, for gpio_to_irq */
 
@@ -96,6 +79,9 @@ static int  msmsdcc_dbg_init(void);
 #endif
 
 static unsigned int msmsdcc_pwrsave = 1;
+
+#define DUMMY_52_STATE_NONE		0
+#define DUMMY_52_STATE_SENT		1
 
 static struct mmc_command dummy52cmd;
 static struct mmc_request dummy52mrq = {
@@ -181,7 +167,6 @@ static void msmsdcc_reset_and_restore(struct msmsdcc_host *host)
 	mci_clk = readl(host->base + MMCICLOCK);
 	mci_mask0 = readl(host->base + MMCIMASK0);
 
-	dsb();
 	/* Reset the controller */
 	ret = clk_reset(host->clk, CLK_RESET_ASSERT);
 	if (ret)
@@ -196,7 +181,6 @@ static void msmsdcc_reset_and_restore(struct msmsdcc_host *host)
 	pr_debug("%s: Controller has been reinitialized\n",
 			mmc_hostname(host->mmc));
 
-	dsb();
 	/* Restore the contoller state */
 	writel(host->pwr, host->base + MMCIPOWER);
 	writel(mci_clk, host->base + MMCICLOCK);
@@ -205,9 +189,6 @@ static void msmsdcc_reset_and_restore(struct msmsdcc_host *host)
 	if (ret)
 		pr_err("%s: Failed to set clk rate %u Hz. err %d\n",
 				mmc_hostname(host->mmc), host->clk_rate, ret);
-	dsb();
-	if (host->dummy_52_needed)
-		host->dummy_52_needed = 0;
 }
 
 static int
@@ -227,22 +208,6 @@ msmsdcc_request_end(struct msmsdcc_host *host, struct mmc_request *mrq)
 	if (mrq->cmd->error == -ETIMEDOUT)
 		mdelay(5);
 
-#ifdef CONFIG_MMC_MSM_PROG_DONE_SCAN
-	if ((mrq->cmd->opcode == SD_IO_RW_EXTENDED) &&
-			(mrq->cmd->arg & 0x80000000)) {
-		/* If its a write and a cmd53 set the prog_scan flag. */
-		host->prog_scan = 1;
-		/* Send STOP to let the SDCC know to stop. */
-		writel(MCI_CSPM_MCIABORT, host->base + MMCICOMMAND);
-		retval = 1;
-	}
-	if (mrq->cmd->opcode == SD_IO_RW_DIRECT) {
-		/* Ok the cmd52 following a cmd53 is received */
-		/* clear all the flags. */
-		host->prog_scan = 0;
-		host->prog_enable = 0;
-	}
-#endif
 	/*
 	 * Need to drop the host lock here; mmc_request_done may call
 	 * back into the driver...
@@ -268,7 +233,6 @@ static inline uint32_t msmsdcc_fifo_addr(struct msmsdcc_host *host)
 
 static inline void msmsdcc_delay(struct msmsdcc_host *host)
 {
-	dsb();
 	udelay(1 + ((3 * USEC_PER_SEC) /
 		(host->clk_rate ? host->clk_rate : host->plat->msmsdcc_fmin)));
 }
@@ -279,7 +243,6 @@ msmsdcc_start_command_exec(struct msmsdcc_host *host, u32 arg, u32 c)
 	writel(arg, host->base + MMCIARGUMENT);
 	msmsdcc_delay(host);
 	writel(c, host->base + MMCICOMMAND);
-	dsb();
 }
 
 static void
@@ -289,6 +252,8 @@ msmsdcc_dma_exec_func(struct msm_dmov_cmd *cmd)
 
 	writel(host->cmd_timeout, host->base + MMCIDATATIMER);
 	writel((unsigned int)host->curr.xfer_size, host->base + MMCIDATALENGTH);
+	writel((readl(host->base + MMCIMASK0) & (~(MCI_IRQ_PIO))) |
+	       host->cmd_pio_irqmask, host->base + MMCIMASK0);
 	msmsdcc_delay(host);	/* Allow data parms to be applied */
 	writel(host->cmd_datactrl, host->base + MMCIDATACTRL);
 	msmsdcc_delay(host);	/* Force delay prior to ADM or command */
@@ -354,14 +319,6 @@ msmsdcc_dma_complete_tlet(unsigned long data)
 		 * If we've already gotten our DATAEND / DATABLKEND
 		 * for this request, then complete it through here.
 		 */
-
-		if (host->dummy_52_needed) {
-			mrq->data->bytes_xfered = host->curr.data_xfered;
-			host->dummy_52_sent = 1;
-			msmsdcc_start_command(host, &dummy52cmd,
-					      MCI_CPSM_PROGENA);
-			goto out;
-		}
 		msmsdcc_stop_data(host);
 		if (!mrq->data->error)
 			host->curr.data_xfered = host->curr.xfer_size;
@@ -372,16 +329,6 @@ msmsdcc_dma_complete_tlet(unsigned long data)
 			del_timer(&host->req_tout_timer);
 			spin_unlock_irqrestore(&host->lock, flags);
 
-#ifdef CONFIG_MMC_MSM_PROG_DONE_SCAN
-			if ((mrq->cmd->opcode == SD_IO_RW_EXTENDED)
-				&& (mrq->cmd->arg & 0x80000000)) {
-				/* set the prog_scan in a cmd53.*/
-				host->prog_scan = 1;
-				/* Send STOP to let the SDCC know to stop. */
-				writel(MCI_CSPM_MCIABORT,
-						host->base + MMCICOMMAND);
-			}
-#endif
 			mmc_request_done(host->mmc, mrq);
 			return;
 		} else
@@ -443,13 +390,13 @@ static int msmsdcc_config_dma(struct msmsdcc_host *host, struct mmc_data *data)
 	nc = host->dma.nc;
 
 	if (host->pdev_id == 1)
-		crci = MSMSDCC_CRCI_SDC1;
+		crci = DMOV_SDC1_CRCI;
 	else if (host->pdev_id == 2)
-		crci = MSMSDCC_CRCI_SDC2;
+		crci = DMOV_SDC2_CRCI;
 	else if (host->pdev_id == 3)
-		crci = MSMSDCC_CRCI_SDC3;
+		crci = DMOV_SDC3_CRCI;
 	else if (host->pdev_id == 4)
-		crci = MSMSDCC_CRCI_SDC4;
+		crci = DMOV_SDC4_CRCI;
 #ifdef DMOV_SDC5_CRCI
 	else if (host->pdev_id == 5)
 		crci = DMOV_SDC5_CRCI;
@@ -558,14 +505,6 @@ msmsdcc_start_command_deferred(struct msmsdcc_host *host,
 		host->prog_enable = 1;
 	}
 
-#ifdef CONFIG_MMC_MSM_PROG_DONE_SCAN
-	if ((cmd->opcode == SD_IO_RW_DIRECT)
-			&& (host->prog_scan == 1)) {
-		*c |= MCI_CPSM_PROGENA;
-		host->prog_enable = 1;
-	}
-#endif
-
 	if (cmd == cmd->mrq->stop)
 		*c |= MCI_CSPM_MCIABORT;
 
@@ -639,8 +578,6 @@ msmsdcc_start_data(struct msmsdcc_host *host, struct mmc_data *data,
 			msmsdcc_start_command_deferred(host, cmd, &c);
 			host->cmd_c = c;
 		}
-		writel((readl(host->base + MMCIMASK0) & (~(MCI_IRQ_PIO))) |
-				host->cmd_pio_irqmask, host->base + MMCIMASK0);
 		dsb();
 		msm_dmov_enqueue_cmd_ext(host->dma.channel, &host->dma.hdr);
 		if (data->flags & MMC_DATA_WRITE)
@@ -708,10 +645,6 @@ msmsdcc_data_err(struct msmsdcc_host *host, struct mmc_data *data,
 		      mmc_hostname(host->mmc), status);
 		data->error = -EIO;
 	}
-
-	/* Dummy CMD52 is not needed when CMD53 has errors */
-	if (host->dummy_52_needed)
-		host->dummy_52_needed = 0;
 }
 
 
@@ -740,16 +673,16 @@ msmsdcc_pio_read(struct msmsdcc_host *host, char *buffer, unsigned int remain)
 
 static int
 msmsdcc_pio_write(struct msmsdcc_host *host, char *buffer,
-		  unsigned int remain, u32 status)
+		  unsigned int remain)
 {
 	void __iomem *base = host->base;
 	char *ptr = buffer;
+	unsigned int maxcnt = MCI_FIFOHALFSIZE;
 
-	do {
-		unsigned int count, maxcnt, sz;
+	while (readl(base + MMCISTATUS) &
+		(MCI_TXFIFOEMPTY | MCI_TXFIFOHALFEMPTY)) {
+		unsigned int count, sz;
 
-		maxcnt = status & MCI_TXFIFOEMPTY ? MCI_FIFOSIZE :
-						    MCI_FIFOHALFSIZE;
 		count = min(remain, maxcnt);
 
 		sz = count % 4 ? (count >> 2) + 1 : (count >> 2);
@@ -759,10 +692,7 @@ msmsdcc_pio_write(struct msmsdcc_host *host, char *buffer,
 
 		if (remain == 0)
 			break;
-
-		status = readl(base + MMCISTATUS);
-	} while (status & MCI_TXFIFOHALFEMPTY);
-	dsb();
+	}
 
 	return ptr - buffer;
 }
@@ -774,17 +704,15 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 	void __iomem		*base = host->base;
 	uint32_t		status;
 
-	spin_lock(&host->lock);
-
 	status = readl(base + MMCISTATUS);
-	if (((readl(host->base + MMCIMASK0) & status) & (MCI_IRQ_PIO)) == 0) {
-		spin_unlock(&host->lock);
+	if (((readl(host->base + MMCIMASK0) & status) & (MCI_IRQ_PIO)) == 0)
 		return IRQ_NONE;
-	}
 
 #if IRQ_DEBUG
 	msmsdcc_print_status(host, "irq1-r", status);
 #endif
+
+	spin_lock(&host->lock);
 
 	do {
 		unsigned long flags;
@@ -819,7 +747,7 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 		if (status & MCI_RXACTIVE)
 			len = msmsdcc_pio_read(host, buffer, remain);
 		if (status & MCI_TXACTIVE)
-			len = msmsdcc_pio_write(host, buffer, remain, status);
+			len = msmsdcc_pio_write(host, buffer, remain);
 
 /*LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24, when PIO_irq, delay is given */ 
 #if defined(CONFIG_LGE_BCM432X_PATCH)
@@ -864,12 +792,9 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 			writel((readl(host->base + MMCIMASK0) &
 				(~(MCI_IRQ_PIO))) | 0, host->base + MMCIMASK0);
 		}
-		dsb();
-	} else if (!host->curr.xfer_remain) {
+	} else if (!host->curr.xfer_remain)
 		writel((readl(host->base + MMCIMASK0) & (~(MCI_IRQ_PIO))) | 0,
 				host->base + MMCIMASK0);
-		dsb();
-	}
 
 	spin_unlock(&host->lock);
 
@@ -879,100 +804,11 @@ msmsdcc_pio_irq(int irq, void *dev_id)
 static void
 msmsdcc_request_start(struct msmsdcc_host *host, struct mmc_request *mrq);
 
-static void msmsdcc_wait_for_rxdata(struct msmsdcc_host *host,
-					struct mmc_data *data)
-{
-	u32 loop_cnt = 0;
-
-	/*
-	 * For read commands with data less than fifo size, it is possible to
-	 * get DATAEND first and RXDATA_AVAIL might be set later because of
-	 * synchronization delay through the asynchronous RX FIFO. Thus, for
-	 * such cases, even after DATAEND interrupt is received software
-	 * should poll for RXDATA_AVAIL until the requested data is read out
-	 * of FIFO. This change is needed to get around this abnormal but
-	 * sometimes expected behavior of SDCC3 controller.
-	 *
-	 * We can expect RXDATAAVAIL bit to be set after 6HCLK clock cycles
-	 * after the data is loaded into RX FIFO. This would amount to less
-	 * than a microsecond and thus looping for 1000 times is good enough
-	 * for that delay.
-	 */
-	while ((host->curr.xfer_remain > 0) &&
-		(host->curr.xfer_remain < MCI_FIFOSIZE) &&
-		(++loop_cnt < 1000)) {
-		if (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
-			spin_unlock(&host->lock);
-			msmsdcc_pio_irq(1, host);
-			spin_lock(&host->lock);
-		}
-	}
-	if (loop_cnt == 1000) {
-		pr_info("%s: Timed out while polling for Rx Data\n",
-				mmc_hostname(host->mmc));
-		data->error = -ETIMEDOUT;
-		msmsdcc_reset_and_restore(host);
-	}
-}
-
-static void msmsdcc_do_cmdirq(struct msmsdcc_host *host, uint32_t status)
-{
-	struct mmc_command *cmd = host->curr.cmd;
-
-	host->curr.cmd = NULL;
-	cmd->resp[0] = readl(host->base + MMCIRESPONSE0);
-	cmd->resp[1] = readl(host->base + MMCIRESPONSE1);
-	cmd->resp[2] = readl(host->base + MMCIRESPONSE2);
-	cmd->resp[3] = readl(host->base + MMCIRESPONSE3);
-
-	if (status & MCI_CMDTIMEOUT) {
-#if VERBOSE_COMMAND_TIMEOUTS
-		pr_err("%s: Command timeout\n", mmc_hostname(host->mmc));
-#endif
-		cmd->error = -ETIMEDOUT;
-	} else if (status & MCI_CMDCRCFAIL && cmd->flags & MMC_RSP_CRC) {
-		pr_err("%s: Command CRC error\n", mmc_hostname(host->mmc));
-		cmd->error = -EILSEQ;
-	}
-
-	if (!cmd->data || cmd->error) {
-		if (host->curr.data && host->dma.sg)
-			msm_dmov_stop_cmd(host->dma.channel,
-					  &host->dma.hdr, 0);
-		else if (host->curr.data) { /* Non DMA */
-			msmsdcc_reset_and_restore(host);
-			msmsdcc_stop_data(host);
-			msmsdcc_request_end(host, cmd->mrq);
-		} else { /* host->data == NULL */
-			if (!cmd->error && host->prog_enable) {
-				if (status & MCI_PROGDONE) {
-					host->prog_scan = 0;
-					host->prog_enable = 0;
-					 msmsdcc_request_end(host, cmd->mrq);
-				} else
-					host->curr.cmd = cmd;
-			} else {
-				if (host->prog_enable) {
-					host->prog_scan = 0;
-					host->prog_enable = 0;
-				}
-				if (host->dummy_52_needed)
-					host->dummy_52_needed = 0;
-				if (cmd->data && cmd->error)
-					msmsdcc_reset_and_restore(host);
-				msmsdcc_request_end(host, cmd->mrq);
-			}
-		}
-	} else if (cmd->data) {
-		if (!(cmd->data->flags & MMC_DATA_READ))
-			msmsdcc_start_data(host, cmd->data, NULL, 0);
-	}
-}
-
 static irqreturn_t
 msmsdcc_irq(int irq, void *dev_id)
 {
 	struct msmsdcc_host	*host = dev_id;
+	void __iomem		*base = host->base;
 	u32			status;
 	int			ret = 0;
 	int			timer = 0;
@@ -996,8 +832,11 @@ msmsdcc_irq(int irq, void *dev_id)
 			host->mmc->ops->set_ios(host->mmc, &host->mmc->ios);
 			spin_lock(&host->lock);
 			if (host->plat->cfg_mpm_sdiowakeup &&
-				(host->mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ))
+				(host->mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ) &&
+				!host->sdio_irq_disabled) {
+				host->sdio_irq_disabled = 1;
 				wake_lock(&host->sdio_wlock);
+			}
 			/* only ansyc interrupt can come when clocks are off */
 			writel(MCI_SDIOINTMASK, host->base + MMCICLEAR);
 		}
@@ -1013,11 +852,23 @@ msmsdcc_irq(int irq, void *dev_id)
 #endif
 		status &= readl(host->base + MMCIMASK0);
 		writel(status, host->base + MMCICLEAR);
-		dsb();
 #if IRQ_DEBUG
 		msmsdcc_print_status(host, "irq0-p", status);
 #endif
 
+		if ((host->plat->dummy52_required) &&
+		    (host->dummy_52_state == DUMMY_52_STATE_SENT)) {
+			if (status & MCI_PROGDONE) {
+				host->dummy_52_state = DUMMY_52_STATE_NONE;
+				host->curr.cmd = NULL;
+				spin_unlock(&host->lock);
+				msmsdcc_request_start(host, host->curr.mrq);
+				return IRQ_HANDLED;
+			}
+			break;
+		}
+
+		data = host->curr.data;
 #ifdef CONFIG_MMC_MSM_SDIO_SUPPORT
 		if (status & MCI_SDIOINTROPE) {
 			if (host->sdcc_suspending)
@@ -1025,37 +876,67 @@ msmsdcc_irq(int irq, void *dev_id)
 			mmc_signal_sdio_irq(host->mmc);
 		}
 #endif
-		data = host->curr.data;
-
-		if (host->dummy_52_sent) {
-			if (status & (MCI_PROGDONE | MCI_CMDCRCFAIL |
-					  MCI_CMDTIMEOUT)) {
-				if (status & MCI_CMDTIMEOUT)
-					pr_err("%s: dummy CMD52 timeout\n",
-						mmc_hostname(host->mmc));
-				if (status & MCI_CMDCRCFAIL)
-					pr_err("%s: dummy CMD52 CRC failed\n",
-						mmc_hostname(host->mmc));
-				host->dummy_52_sent = 0;
-				host->dummy_52_needed = 0;
-				if (data) {
-					msmsdcc_stop_data(host);
-					msmsdcc_request_end(host, data->mrq);
-				}
-				WARN(!data, "No data cmd for dummy CMD52\n");
-				spin_unlock(&host->lock);
-				return IRQ_HANDLED;
-			}
-			break;
-		}
-
 		/*
 		 * Check for proper command response
 		 */
 		cmd = host->curr.cmd;
 		if ((status & (MCI_CMDSENT | MCI_CMDRESPEND | MCI_CMDCRCFAIL |
 			      MCI_CMDTIMEOUT | MCI_PROGDONE)) && cmd) {
-			msmsdcc_do_cmdirq(host, status);
+
+			host->curr.cmd = NULL;
+
+			cmd->resp[0] = readl(base + MMCIRESPONSE0);
+			cmd->resp[1] = readl(base + MMCIRESPONSE1);
+			cmd->resp[2] = readl(base + MMCIRESPONSE2);
+			cmd->resp[3] = readl(base + MMCIRESPONSE3);
+
+			if (status & MCI_CMDTIMEOUT) {
+#if VERBOSE_COMMAND_TIMEOUTS
+				pr_err("%s: Command timeout\n",
+				       mmc_hostname(host->mmc));
+#endif
+				cmd->error = -ETIMEDOUT;
+			} else if (status & MCI_CMDCRCFAIL &&
+				   cmd->flags & MMC_RSP_CRC) {
+				pr_err("%s: Command CRC error\n",
+				       mmc_hostname(host->mmc));
+				cmd->error = -EILSEQ;
+			}
+
+			if (!cmd->data || cmd->error) {
+				if (host->curr.data && host->dma.sg)
+					msm_dmov_stop_cmd(host->dma.channel,
+							  &host->dma.hdr, 0);
+				else if (host->curr.data) { /* Non DMA */
+					msmsdcc_reset_and_restore(host);
+					msmsdcc_stop_data(host);
+					timer |= msmsdcc_request_end(host,
+							cmd->mrq);
+				} else { /* host->data == NULL */
+					if (!cmd->error && host->prog_enable) {
+						if (status & MCI_PROGDONE) {
+							host->prog_scan = 0;
+							host->prog_enable = 0;
+							timer |=
+							 msmsdcc_request_end(
+								host, cmd->mrq);
+						} else
+							host->curr.cmd = cmd;
+					} else {
+						if (host->prog_enable) {
+							host->prog_scan = 0;
+							host->prog_enable = 0;
+						}
+						timer |=
+							msmsdcc_request_end(
+							 host, cmd->mrq);
+					}
+				}
+			} else if (cmd->data) {
+				if (!(cmd->data->flags & MMC_DATA_READ))
+					msmsdcc_start_data(host, cmd->data,
+								NULL, 0);
+			}
 		}
 
 		if (data) {
@@ -1104,30 +985,24 @@ msmsdcc_irq(int irq, void *dev_id)
 					 * Check to see if theres still data
 					 * to be read, and simulate a PIO irq.
 					 */
-					if (data->flags & MMC_DATA_READ)
-						msmsdcc_wait_for_rxdata(host,
-								data);
+					if (readl(host->base + MMCISTATUS) &
+						       MCI_RXDATAAVLBL) {
+						spin_unlock(&host->lock);
+						msmsdcc_pio_irq(1, host);
+						spin_lock(&host->lock);
+					}
+					msmsdcc_stop_data(host);
 					if (!data->error)
 						host->curr.data_xfered =
 							host->curr.xfer_size;
 
-					if (!host->dummy_52_needed) {
-						msmsdcc_stop_data(host);
-						if (!data->stop) {
-							msmsdcc_request_end(
-								  host,
-								  data->mrq);
-						} else {
-							msmsdcc_start_command(
-								host,
-								data->stop, 0);
-							timer = 1;
-						}
-					} else {
-						host->dummy_52_sent = 1;
+					if (!data->stop)
+						timer |= msmsdcc_request_end(
+							  host, data->mrq);
+					else {
 						msmsdcc_start_command(host,
-							&dummy52cmd,
-							MCI_CPSM_PROGENA);
+							      data->stop, 0);
+						timer = 1;
 					}
 				}
 			}
@@ -1190,12 +1065,18 @@ msmsdcc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	host->curr.mrq = mrq;
 
 	if (host->plat->dummy52_required) {
-		if (mrq->data && mrq->data->flags == MMC_DATA_WRITE) {
-			if (mrq->cmd->opcode == SD_IO_RW_EXTENDED ||
-				mrq->cmd->opcode == 54) {
-				host->dummy_52_needed = 1;
+		if (host->dummy_52_needed) {
+			if (mrq->data) {
+				host->dummy_52_state = DUMMY_52_STATE_SENT;
+				msmsdcc_start_command(host, &dummy52cmd,
+						      MCI_CPSM_PROGENA);
+				spin_unlock_irqrestore(&host->lock, flags);
+				return;
 			}
+			host->dummy_52_needed = 0;
 		}
+		if ((mrq->cmd->opcode == SD_IO_RW_EXTENDED) && (mrq->data))
+			host->dummy_52_needed = 1;
 	}
 	msmsdcc_request_start(host, mrq);
 	spin_unlock_irqrestore(&host->lock, flags);
@@ -1206,34 +1087,6 @@ static inline int msmsdcc_is_pwrsave(struct msmsdcc_host *host)
 	if (host->clk_rate > 400000 && msmsdcc_pwrsave)
 		return 1;
 	return 0;
-}
-
-static void msmsdcc_enable_irq_wake(struct msmsdcc_host *host)
-{
-	unsigned int wakeup_irq;
-
-	wakeup_irq = (host->plat->sdiowakeup_irq) ?
-			host->plat->sdiowakeup_irq :
-			host->irqres->start;
-
-	if (!host->irq_wake_enabled) {
-		enable_irq_wake(wakeup_irq);
-		host->irq_wake_enabled = true;
-	}
-}
-
-static void msmsdcc_disable_irq_wake(struct msmsdcc_host *host)
-{
-	unsigned int wakeup_irq;
-
-	wakeup_irq = (host->plat->sdiowakeup_irq) ?
-			host->plat->sdiowakeup_irq :
-			host->irqres->start;
-
-	if (host->irq_wake_enabled) {
-		disable_irq_wake(wakeup_irq);
-		host->irq_wake_enabled = false;
-	}
 }
 
 static void
@@ -1260,12 +1113,11 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 					!host->plat->sdiowakeup_irq) {
 				writel(host->mci_irqenable,
 					host->base + MMCIMASK0);
-				dsb();
-				if (host->plat->cfg_mpm_sdiowakeup &&
+			if (host->plat->cfg_mpm_sdiowakeup &&
 					(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ))
-					host->plat->cfg_mpm_sdiowakeup(
-						mmc_dev(mmc), SDC_DAT1_DISWAKE);
-				msmsdcc_disable_irq_wake(host);
+				host->plat->cfg_mpm_sdiowakeup(
+						mmc_dev(mmc), 0);
+				disable_irq_wake(host->irqres->start);
 			}
 		}
 		spin_unlock_irqrestore(&host->lock, flags);
@@ -1307,9 +1159,6 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	case MMC_POWER_OFF:
 		htc_pwrsink_set(PWRSINK_SDCARD, 0);
 		if (!host->sdcc_irq_disabled) {
-			if (host->plat->cfg_mpm_sdiowakeup)
-				host->plat->cfg_mpm_sdiowakeup(
-					mmc_dev(mmc), SDC_DAT1_DISABLE);
 			disable_irq(host->irqres->start);
 			host->sdcc_irq_disabled = 1;
 		}
@@ -1317,9 +1166,6 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	case MMC_POWER_UP:
 		pwr |= MCI_PWR_UP;
 		if (host->sdcc_irq_disabled) {
-			if (host->plat->cfg_mpm_sdiowakeup)
-				host->plat->cfg_mpm_sdiowakeup(
-					mmc_dev(mmc), SDC_DAT1_ENABLE);
 			enable_irq(host->irqres->start);
 			host->sdcc_irq_disabled = 0;
 		}
@@ -1331,12 +1177,12 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 
 	writel(clk, host->base + MMCICLOCK);
-	msmsdcc_delay(host);
+
+	udelay(50);
 
 	if (host->pwr != pwr) {
 		host->pwr = pwr;
 		writel(pwr, host->base + MMCIPOWER);
-		dsb();
 	}
 
 	spin_lock_irqsave(&host->lock, flags);
@@ -1344,13 +1190,12 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		if (mmc->card && mmc->card->type == MMC_TYPE_SDIO) {
 			if (!host->plat->sdiowakeup_irq) {
 				writel(MCI_SDIOINTMASK, host->base + MMCIMASK0);
-				dsb();
 				WARN_ON(host->sdcc_irq_disabled);
 				if (host->plat->cfg_mpm_sdiowakeup &&
 					(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ))
 					host->plat->cfg_mpm_sdiowakeup(
-						mmc_dev(mmc), SDC_DAT1_ENWAKE);
-				msmsdcc_enable_irq_wake(host);
+							mmc_dev(mmc), 1);
+				enable_irq_wake(host->irqres->start);
 			} else {
 				writel(0, host->base + MMCIMASK0);
 			}
@@ -1378,7 +1223,6 @@ int msmsdcc_set_pwrsave(struct mmc_host *mmc, int pwrsave)
 	else
 		clk &= ~MCI_CLK_PWRSAVE;
 	writel(clk, host->base + MMCICLOCK);
-	dsb();
 
 	return 0;
 }
@@ -1436,20 +1280,16 @@ static int msmsdcc_get_ro(struct mmc_host *mmc)
 static void msmsdcc_enable_sdio_irq(struct mmc_host *mmc, int enable)
 {
 	struct msmsdcc_host *host = mmc_priv(mmc);
-	unsigned long flags;
 
 	if (enable) {
-		spin_lock_irqsave(&host->lock, flags);
 		host->mci_irqenable |= MCI_SDIOINTOPERMASK;
 		writel(readl(host->base + MMCIMASK0) | MCI_SDIOINTOPERMASK,
 			       host->base + MMCIMASK0);
-		spin_unlock_irqrestore(&host->lock, flags);
 	} else {
 		host->mci_irqenable &= ~MCI_SDIOINTOPERMASK;
 		writel(readl(host->base + MMCIMASK0) & ~MCI_SDIOINTOPERMASK,
 		       host->base + MMCIMASK0);
 	}
-	dsb();
 }
 #endif /* CONFIG_MMC_MSM_SDIO_SUPPORT */
 
@@ -1512,23 +1352,23 @@ static const struct mmc_host_ops msmsdcc_ops = {
  * And still same status, just skip.
  * fred.cho@lge.com, 2010-08-05
  */
-
-
 static void
 msmsdcc_check_status(unsigned long data)
 {
 	struct msmsdcc_host *host = (struct msmsdcc_host *)data;
-
 	if (msmsdcc_get_status(host->mmc)) {
-			if (host->plat->status_irq == 83) {
-			if(!host->eject) {
-				printk(KERN_ERR "[%s] !host->eject: mmc_detect_change after 150ms\n", __func__);
-				mmc_detect_change(host->mmc, (3*HZ)/2);
-			} else {
-				printk(KERN_ERR "[%s] host->eject: mmc_detect_change without delay\n", __func__);
-				mmc_detect_change(host->mmc, 0);
-			}
-		} else if (!host->eject)
+
+#ifdef CONFIG_LGE_BCM432X_PATCH
+		if (host->plat->status_irq == MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET)) {
+			printk(KERN_ERR "[host->plat->status_irq:%d:MSM_GPIO_TO_INIT:%d:%s:%d]\n",
+				   host->plat->status_irq,
+				   MSM_GPIO_TO_INT(CONFIG_BCM4325_GPIO_WL_RESET),
+				   __func__, __LINE__);
+			mmc_detect_change(host->mmc, 0);
+		}
+		else
+#endif
+			if (!host->eject)
 				mmc_detect_change(host->mmc, TIME_STEP);
 			else
 				mmc_detect_change(host->mmc, 0);
@@ -1550,16 +1390,13 @@ msmsdcc_platform_sdiowakeup_irq(int irq, void *dev_id)
 {
 	struct msmsdcc_host	*host = dev_id;
 
-	pr_debug("%s: SDIO Wake up IRQ : %d\n", mmc_hostname(host->mmc), irq);
-	BUG_ON(irq != host->plat->sdiowakeup_irq);
-
+	pr_info("%s: SDIO Wake up IRQ : %d\n", __func__, irq);
+	printk("%s: [WiFi] SDIO Wake up IRQ  %d \n",__func__, irq);
 	spin_lock(&host->lock);
 	if (!host->sdio_irq_disabled) {
+		wake_lock(&host->sdio_wlock);
 		disable_irq_nosync(irq);
-		if (host->mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ) {
-			wake_lock(&host->sdio_wlock);
-			msmsdcc_disable_irq_wake(host);
-		}
+		disable_irq_wake(irq);
 		host->sdio_irq_disabled = 1;
 	}
 	spin_unlock(&host->lock);
@@ -1661,8 +1498,9 @@ static void msmsdcc_early_suspend(struct early_suspend *h)
 		container_of(h, struct msmsdcc_host, early_suspend);
 	unsigned long flags;
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
-#ifdef  WLAN_RESET_GPIO
-	if ( host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO) )
+	printk(KERN_ERR "msmsdcc_early_suspend : start \n");
+#ifdef  CONFIG_BCM4325_GPIO_WL_RESET
+	if ( host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET) )
 #endif
 	{
 		spin_lock_irqsave(&host->lock, flags);
@@ -1670,6 +1508,7 @@ static void msmsdcc_early_suspend(struct early_suspend *h)
 		host->mmc->caps &= ~MMC_CAP_NEEDS_POLL;
 		spin_unlock_irqrestore(&host->lock, flags);
 	}
+	printk(KERN_ERR "msmsdcc_early_suspend : end \n");
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
 };
 static void msmsdcc_late_resume(struct early_suspend *h)
@@ -1678,17 +1517,21 @@ static void msmsdcc_late_resume(struct early_suspend *h)
 		container_of(h, struct msmsdcc_host, early_suspend);
 	unsigned long flags;
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
-#ifdef  WLAN_RESET_GPIO
-	if ( host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO) )
+	printk(KERN_ERR "msmsdcc_late_resume : start \n");
+#ifdef  CONFIG_BCM4325_GPIO_WL_RESET
+	if ( host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET) )
 #endif
 	{
-		if (host->polling_enabled) {
-			spin_lock_irqsave(&host->lock, flags);
-			host->mmc->caps |= MMC_CAP_NEEDS_POLL;
-			mmc_detect_change(host->mmc, 0);
-			spin_unlock_irqrestore(&host->lock, flags);
-		}
+/* LGE_CHANGE_E [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
+	if (host->polling_enabled) {
+		spin_lock_irqsave(&host->lock, flags);
+		host->mmc->caps |= MMC_CAP_NEEDS_POLL;
+		mmc_detect_change(host->mmc, 0);
+		spin_unlock_irqrestore(&host->lock, flags);
 	}
+/* LGE_CHANGE_S [yoohoo@lge.com] 2009-10-24, don't do this to WLAN */
+	}
+	printk(KERN_ERR "msmsdcc_late_resume : END \n");
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2010-04-24, don't do this to WLAN */
 };
 #endif
@@ -1696,51 +1539,18 @@ static void msmsdcc_late_resume(struct early_suspend *h)
 static void msmsdcc_req_tout_timer_hdlr(unsigned long data)
 {
 	struct msmsdcc_host *host = (struct msmsdcc_host *)data;
-	struct mmc_request *mrq;
+	struct mmc_command *cmd;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->lock, flags);
-	if (host->dummy_52_sent) {
-		pr_info("%s: %s: dummy CMD52 timeout\n",
-				mmc_hostname(host->mmc), __func__);
-		host->dummy_52_sent = 0;
-	}
-
-	mrq = host->curr.mrq;
-
-	if (mrq && mrq->cmd) {
+	cmd = host->curr.cmd;
+	if (cmd) {
 		pr_info("%s: %s CMD%d\n", mmc_hostname(host->mmc),
-				__func__, mrq->cmd->opcode);
-		if (!mrq->cmd->error)
-			mrq->cmd->error = -ETIMEDOUT;
-		if (host->dummy_52_needed)
-			host->dummy_52_needed = 0;
-		if (host->curr.data) {
-			pr_info("%s: %s Request timeout\n",
-					mmc_hostname(host->mmc), __func__);
-			if (mrq->data && !mrq->data->error)
-				mrq->data->error = -ETIMEDOUT;
-			host->curr.data_xfered = 0;
-			if (host->dma.sg) {
-				msm_dmov_stop_cmd(host->dma.channel,
-						&host->dma.hdr, 0);
-			} else {
-				msmsdcc_reset_and_restore(host);
-				msmsdcc_stop_data(host);
-				if (mrq->data && mrq->data->stop)
-					msmsdcc_start_command(host,
-							mrq->data->stop, 0);
-				else
-					msmsdcc_request_end(host, mrq);
-			}
-		} else {
-			if (host->prog_enable) {
-				host->prog_scan = 0;
-				host->prog_enable = 0;
-			}
-			msmsdcc_reset_and_restore(host);
-			msmsdcc_request_end(host, mrq);
-		}
+			__func__, cmd->opcode);
+		if (!cmd->error)
+			cmd->error = -ETIMEDOUT;
+		msmsdcc_reset_and_restore(host);
+		msmsdcc_request_end(host, cmd->mrq);
 	}
 	spin_unlock_irqrestore(&host->lock, flags);
 }
@@ -1751,7 +1561,6 @@ msmsdcc_probe(struct platform_device *pdev)
 	struct mmc_platform_data *plat = pdev->dev.platform_data;
 	struct msmsdcc_host *host;
 	struct mmc_host *mmc;
-	unsigned long flags;
 	struct resource *irqres = NULL;
 	struct resource *memres = NULL;
 	struct resource *dmares = NULL;
@@ -1897,7 +1706,7 @@ msmsdcc_probe(struct platform_device *pdev)
 	if (host->pdev_id == BRCM_WLAN_SLOT){ 
 		mmc->f_max = 24576000;
 		printk("%s : slot set f_max [%d]\n",mmc_hostname(host->mmc),mmc->f_max);
-	} else {
+	}else{
 		mmc->f_max = plat->msmsdcc_fmax;
 	}
 #endif	/* CONFIG_LGE_BCM432X_PATCH */
@@ -1926,7 +1735,7 @@ msmsdcc_probe(struct platform_device *pdev)
 	mmc->max_phys_segs = NR_SG;
 	mmc->max_hw_segs = NR_SG;
 	mmc->max_blk_size = 4096;	/* MCI_DATA_CTL BLOCKSIZE up to 4096 */
-	mmc->max_blk_count = 65536;
+	mmc->max_blk_count = 65535;
 
 	mmc->max_req_size = 33554432;	/* MCI_DATA_LENGTH is 25 bits */
 	mmc->max_seg_size = mmc->max_req_size;
@@ -1937,7 +1746,6 @@ msmsdcc_probe(struct platform_device *pdev)
 	/* Delay needed (MMCIMASK0 was just written above) */
 	msmsdcc_delay(host);
 	writel(MCI_IRQENABLE, host->base + MMCIMASK0);
-	dsb();
 	host->mci_irqenable = MCI_IRQENABLE;
 
 	ret = request_irq(irqres->start, msmsdcc_irq, IRQF_SHARED,
@@ -1962,8 +1770,7 @@ msmsdcc_probe(struct platform_device *pdev)
 	host->sdcc_irq_disabled = 1;
 
 	if (plat->sdiowakeup_irq) {
-		wake_lock_init(&host->sdio_wlock, WAKE_LOCK_SUSPEND,
-				mmc_hostname(mmc));
+		printk("%s: register sdio wakeup\n", __func__);
 		ret = request_irq(plat->sdiowakeup_irq,
 			msmsdcc_platform_sdiowakeup_irq,
 			IRQF_SHARED | IRQF_TRIGGER_LOW,
@@ -1974,12 +1781,9 @@ msmsdcc_probe(struct platform_device *pdev)
 			goto pio_irq_free;
 		} else {
 			mmc->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
-			spin_lock_irqsave(&host->lock, flags);
-			if (!host->sdio_irq_disabled) {
-				disable_irq_nosync(plat->sdiowakeup_irq);
-				host->sdio_irq_disabled = 1;
-			}
-			spin_unlock_irqrestore(&host->lock, flags);
+			disable_irq(plat->sdiowakeup_irq);
+			wake_lock_init(&host->sdio_wlock, WAKE_LOCK_SUSPEND,
+					mmc_hostname(mmc));
 		}
 	}
 
@@ -2013,19 +1817,9 @@ msmsdcc_probe(struct platform_device *pdev)
 		}
 	} else if (plat->register_status_notify) {
 		plat->register_status_notify(msmsdcc_status_notify_cb, host);
-
-#if defined(CONFIG_MACH_MSM7X27_SWIFT)
-	} else if (!plat->status) {
-		printk(KERN_ERR "%s: No card detect facilities available\n",
-				mmc_hostname(mmc));
-		if (host->pdev_id == 2)
-			mmc->caps |= MMC_CAP_NEEDS_POLL;
-	};
-#else /* qualcomm or google */
 	} else if (!plat->status)
 		pr_err("%s: No card detect facilities available\n",
 		       mmc_hostname(mmc));
-#endif /* CONFIG_MACH_MSM7X27_SWIFT */
 
 	mmc_set_drvdata(pdev, mmc);
 
@@ -2122,11 +1916,11 @@ msmsdcc_probe(struct platform_device *pdev)
 		free_irq(plat->status_irq, host);
  sdiowakeup_irq_free:
 	wake_lock_destroy(&host->sdio_suspend_wlock);
-	if (plat->sdiowakeup_irq)
-		free_irq(plat->sdiowakeup_irq, host);
- pio_irq_free:
-	if (plat->sdiowakeup_irq)
+	if (plat->sdiowakeup_irq) {
 		wake_lock_destroy(&host->sdio_wlock);
+		free_irq(plat->sdiowakeup_irq, host);
+	}
+ pio_irq_free:
 	free_irq(irqres->start, host);
  irq_free:
 	free_irq(irqres->start, host);
@@ -2225,44 +2019,30 @@ msmsdcc_runtime_suspend(struct device *dev)
 		host->sdcc_suspending = 1;
 		mmc->suspend_task = current;
 
-		/*
-		 * MMC core thinks that host is disabled by now since
-		 * runtime suspend is scheduled after msmsdcc_disable()
-		 * is called. Thus, MMC core will try to enable the host
-		 * while suspending it. This results in a synchronous
-		 * runtime resume request while in runtime suspending
-		 * context and hence inorder to complete this resume
-		 * requet, it will wait for suspend to be complete,
-		 * but runtime suspend also can not proceed further
-		 * until the host is resumed. Thus, it leads to a hang.
-		 * Hence, increase the pm usage count before suspending
-		 * the host so that any resume requests after this will
-		 * simple become pm usage counter increment operations.
-		 */
-// LGE_DEV_PORTING, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
-#if !defined(CONFIG_LGE_BCM432X_PATCH)
+			/*
+			 * MMC core thinks that host is disabled by now since
+			 * runtime suspend is scheduled after msmsdcc_disable()
+			 * is called. Thus, MMC core will try to enable the host
+			 * while suspending it. This results in a synchronous
+			 * runtime resume request while in runtime suspending
+			 * context and hence inorder to complete this resume
+			 * requet, it will wait for suspend to be complete,
+			 * but runtime suspend also can not proceed further
+			 * until the host is resumed. Thus, it leads to a hang.
+			 * Hence, increase the pm usage count before suspending
+			 * the host so that any resume requests after this will
+			 * simple become pm usage counter increment operations.
+			 */
 		pm_runtime_get_noresume(dev);
-		rc = mmc_suspend_host(mmc);
-		pm_runtime_put_noidle(dev);
-#else
-		if (host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO)) {
-			pm_runtime_get_noresume(dev);
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+		if (host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
 			rc = mmc_suspend_host(mmc);
-			pm_runtime_put_noidle(dev);
 		}
-#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && !(defined(CONFIG_BCM4325) || defined(CONFIG_BCM4325_MODULE))
-		if (host->plat->status_irq == gpio_to_irq(WLAN_RESET_GPIO)) {
-			if(dhdpm.suspend != NULL) {
-				//rc = dhdpm.suspend(NULL);
-				dhdpm.suspend(NULL);
-			}
-			else
-				printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
-		}
-#endif /* defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) */
-#endif /* !defined(CONFIG_LGE_BCM432X_PATCH) */
-// LGE_DEV_END, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
-
+#endif
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */		
+		pm_runtime_put_noidle(dev);
+		
 		if (!rc) {
 			/*
 			 * If MMC core level suspend is not supported, turn
@@ -2271,23 +2051,18 @@ msmsdcc_runtime_suspend(struct device *dev)
 			mmc->ios.clock = 0;
 			mmc->ops->set_ios(host->mmc, &host->mmc->ios);
 
-			if (mmc->card && (mmc->card->type == MMC_TYPE_SDIO) &&
-				(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ)
-#ifdef WLAN_RESET_GPIO
-				&& (host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO))
-#endif
-			) {
+		if (mmc->card && (mmc->card->type == MMC_TYPE_SDIO) &&
+				(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ)) {
+				host->sdio_irq_disabled = 0;
 				if (host->plat->sdiowakeup_irq) {
-					host->sdio_irq_disabled = 0;
-					msmsdcc_enable_irq_wake(host);
+					enable_irq_wake(
+						host->plat->sdiowakeup_irq);
 					enable_irq(host->plat->sdiowakeup_irq);
 				}
 			}
 		}
 		host->sdcc_suspending = 0;
 		mmc->suspend_task = NULL;
-		if (rc && wake_lock_active(&host->sdio_suspend_wlock))
-			wake_unlock(&host->sdio_suspend_wlock);
 	}
 	return rc;
 }
@@ -2298,6 +2073,7 @@ msmsdcc_runtime_resume(struct device *dev)
 	struct mmc_host *mmc = dev_get_drvdata(dev);
 	struct msmsdcc_host *host = mmc_priv(mmc);
 	unsigned long flags;
+	int release_lock = 0;
 
 	if (mmc) {
 		mmc->ios.clock = host->clk_rate;
@@ -2305,54 +2081,41 @@ msmsdcc_runtime_resume(struct device *dev)
 
 		spin_lock_irqsave(&host->lock, flags);
 		writel(host->mci_irqenable, host->base + MMCIMASK0);
-		dsb();
 
 		if (mmc->card && (mmc->card->type == MMC_TYPE_SDIO) &&
 				(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ) &&
-				(!host->sdio_irq_disabled)
-#ifdef WLAN_RESET_GPIO
-				&& (host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO))
-#endif
-                 ) {
+				!host->sdio_irq_disabled) {
 				if (host->plat->sdiowakeup_irq) {
-					disable_irq_nosync(host->plat->sdiowakeup_irq);
-					msmsdcc_disable_irq_wake(host);
-					host->sdio_irq_disabled = 1;
+					disable_irq_nosync(
+						host->plat->sdiowakeup_irq);
+					disable_irq_wake(
+						host->plat->sdiowakeup_irq);
 				}
+				host->sdio_irq_disabled = 1;
+		} else {
+			release_lock = 1;
 		}
 
 		spin_unlock_irqrestore(&host->lock, flags);
 
-#ifdef  WLAN_RESET_GPIO
-		// LGE_DEV_PORTING, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
-		if (host->plat->status_irq != gpio_to_irq(WLAN_RESET_GPIO)) {
+/* LGE_CHANGE_S [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+		if (host->plat->status_irq != gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
 			mmc_resume_host(mmc);
 		}
-		// LGE_DEV_END, 2011-02-24, jongpil.yoon@lge.com, <wifi suspend/resume>
-#else /* QCT origin */
-		mmc_resume_host(mmc);
 #endif
+/* LGE_CHANGE_E [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
 
-/* LGE_CHANGE_S, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
-#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && !(defined(CONFIG_BCM4325) || defined(CONFIG_BCM4325_MODULE))
-		//if ( mmc->card && mmc->card->type == MMC_TYPE_SDIO) {
-		if (host->plat->status_irq == gpio_to_irq(WLAN_RESET_GPIO)) {
-			//msmsdcc_enable_sdio_irq(mmc, 1); We will confirm whether this function is need ?
-
-			if (dhdpm.resume != NULL) {
-			    dhdpm.resume(NULL);
-			}
-		}
-#endif
-/* LGE_CHANGE_E, [jisung.yang@lge.com], 2010-04-24, <never sleep policy - host wakeup> */
 
 		/*
 		 * After resuming the host wait for sometime so that
 		 * the SDIO work will be processed.
 		 */
-		if ((mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ) &&
-				wake_lock_active(&host->sdio_wlock))
-				wake_lock_timeout(&host->sdio_wlock, 1);
+		if ((mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ) && release_lock) {
+			printk("%s: wakelock \n", __func__);
+			wake_lock_timeout(&host->sdio_wlock, 1);
+		}
+
 		 wake_unlock(&host->sdio_suspend_wlock);
 	}
 	return 0;
@@ -2360,12 +2123,8 @@ msmsdcc_runtime_resume(struct device *dev)
 
 static int msmsdcc_runtime_idle(struct device *dev)
 {
-	struct mmc_host *mmc = dev_get_drvdata(dev);
-	struct msmsdcc_host *host = mmc_priv(mmc);
-
 	/* Idle timeout is not configurable for now */
 	pm_schedule_suspend(dev, MSM_MMC_IDLE_TIMEOUT);
-
 	return -EAGAIN;
 }
 
@@ -2379,16 +2138,16 @@ static int msmsdcc_pm_suspend(struct device *dev)
 		disable_irq(host->plat->status_irq);
 
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
-#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && (defined(CONFIG_BCM4325) || defined(CONFIG_BCM4325_MODULE))
-                if (host->plat->status_irq == gpio_to_irq(WLAN_RESET_GPIO)) {
-                        if(dhdpm.suspend != NULL){
-                                //rc = dhdpm.suspend(NULL);
-                                printk("%s: enable bcm43xx host wakeup\n", __func__);
-                                dhdpm.suspend(NULL);
-                        } else {
-                                printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
-                        }
-                }
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+		if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
+			if(dhdpm.suspend != NULL){  
+				//rc = dhdpm.suspend(NULL);
+				printk("%s: enable bcm4325 host wakeup\n", __func__);
+				dhdpm.suspend(NULL);
+			} else {
+				printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
+			}
+		}
 #endif
 /* LGE_CHANGE_E [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
 
@@ -2403,20 +2162,19 @@ static int msmsdcc_pm_resume(struct device *dev)
 	struct mmc_host *mmc = dev_get_drvdata(dev);
 	struct msmsdcc_host *host = mmc_priv(mmc);
 	int rc = 0;
-
-	if (!pm_runtime_suspended(dev))
-		rc = msmsdcc_runtime_resume(dev);
+	printk("%s: start\n", __func__);
+	rc = msmsdcc_runtime_resume(dev);
 
 /* LGE_CHANGE_S [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
-#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP) && (defined(CONFIG_BCM4325) || defined(CONFIG_BCM4325_MODULE))
-                        if (host->plat->status_irq == gpio_to_irq(WLAN_RESET_GPIO)) {
-                                if(dhdpm.resume != NULL) {
-                                        printk("%s: disable bcm43xx host wakeup\n", __func__);
-                                        dhdpm.resume(NULL);
-                                } else {
-                                        printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
-                                }
-                        }
+#if defined(CONFIG_BRCM_LGE_WL_HOSTWAKEUP)
+			if (host->plat->status_irq == gpio_to_irq(CONFIG_BCM4325_GPIO_WL_RESET)) {
+				if(dhdpm.resume != NULL) {
+					printk("%s: disable bcm4325 host wakeup\n", __func__);
+					dhdpm.resume(NULL);
+				} else {
+					printk("[WiFi] %s: dhdpm.suspend=NULL \n",__FUNCTION__);
+				}
+			}
 #endif
 /* LGE_CHANGE_E [jisung.yang@lge.com] 2011-3-4, <Support Host Wakeup> */
 
