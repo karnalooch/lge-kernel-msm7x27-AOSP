@@ -82,28 +82,6 @@ void __init swift_init_timed_vibrator(void);
  * so board specific configuration can be redefined like "over riding" in OOP
  */
 extern struct msm_pm_platform_data msm7x27_pm_data[MSM_PM_SLEEP_MODE_NR];
-#if 0
-struct msm_pm_platform_data msm7x27_pm_data[MSM_PM_SLEEP_MODE_NR] = {
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].latency = 16000,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE].residency = 20000,
-
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].supported = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].suspend_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].latency = 12000,
-	[MSM_PM_SLEEP_MODE_POWER_COLLAPSE_NO_XO_SHUTDOWN].residency = 20000,
-
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].supported = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].suspend_enabled
-		= 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].idle_enabled = 1,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].latency = 2000,
-	[MSM_PM_SLEEP_MODE_RAMP_DOWN_AND_WAIT_FOR_INTERRUPT].residency = 0,
-};
-#endif
 
 /* board-specific usb data definitions */
 /* QCT originals are in device_lge.c, not here */
@@ -400,7 +378,31 @@ struct android_usb_platform_data android_usb_pdata = {
 	.serial_number = "LG_ANDROID_GT540_GB_",
 };
 
+static int __init board_serialno_setup(char *serialno)
+{
+	int i;
+	char *src = serialno;
+
+	/* create a fake MAC address from our serial number.
+	 * first byte is 0x02 to signify locally administered.
+	 */
+	rndis_pdata.ethaddr[0] = 0x02;
+	for (i = 0; *src; i++) {
+		/* XOR the USB serial across the remaining bytes */
+		rndis_pdata.ethaddr[i % (ETH_ALEN - 1) + 1] ^= *src++;
+	}
+
+	android_usb_pdata.serial_number = serialno;
+	return 1;
+}
+__setup("androidboot.serialno=", board_serialno_setup);
+
+
 #endif /* CONFIG_USB_ANDROID */
+
+static struct platform_device lge_ats = {
+     .name = "swift_ats",
+};
 
 static struct platform_device *devices[] __initdata = {
 #ifdef CONFIG_LGE_UART3
@@ -414,6 +416,7 @@ static struct platform_device *devices[] __initdata = {
 	&msm_device_snd,
 	&msm_device_adspdec,
 	&msm_device_tssc,
+	&lge_ats,
 };
 
 extern struct sys_timer msm_timer;
@@ -486,14 +489,13 @@ static void __init msm7x2x_init(void)
 	lge_add_lcd_devices();
 	lge_add_btpower_devices();
 	lge_add_mmc_devices();
-	lge_add_wlan_devices();
 	lge_add_input_devices();
 	lge_add_misc_devices();
-	lge_add_pm_devices();
 
 	/* gpio i2c devices should be registered at latest point */
 	lge_add_gpio_i2c_devices();
 	swift_init_timed_vibrator();
+	amp_init_gpio_i2c_device();
 }
 
 static void __init msm7x2x_map_io(void)
@@ -511,7 +513,7 @@ static void __init msm7x2x_map_io(void)
 #endif
 }
 
-MACHINE_START(MSM7X27_SWIFT, "MSM7x27 SWIFT")
+MACHINE_START(MSM7X27_SWIFT, "MSM7x27 SWIFT MIRO")
 #ifdef CONFIG_MSM_DEBUG_UART
   .phys_io        = MSM_DEBUG_UART_PHYS,
   .io_pg_offst    = ((MSM_DEBUG_UART_BASE) >> 18) & 0xfffc,

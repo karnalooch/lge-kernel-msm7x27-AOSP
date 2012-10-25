@@ -34,21 +34,8 @@
 /* LGE_E [ynj.kim@lge.com] 2010-05-21 : atcmd - virtual device */
 
 /* sdcard related macros */
-#ifdef CONFIG_MMC_MSM_CARD_HW_DETECTION
 #define GPIO_SD_DETECT_N	49
-#define GPIO_MMC_COVER_DETECT	19
 #define VREG_SD_LEVEL		2850
-#endif
-
-/* touch-screen macros */
-#define TS_X_MIN		0
-#define TS_X_MAX		320
-#define TS_Y_MIN		0
-#define TS_Y_MAX		480
-#define TS_GPIO_I2C_SDA		91
-#define TS_GPIO_I2C_SCL		90
-#define TS_GPIO_IRQ		92
-#define TS_I2C_SLAVE_ADDR	0x20
 
 /* camera */
 #define CAM_I2C_SLAVE_ADDR		0x1A
@@ -59,11 +46,6 @@
 
 #define CAM_POWER_OFF		0
 #define CAM_POWER_ON		1
-
-#define LDO_CAM_AF_NO		1	/* 2.8V */
-#define LDO_CAM_AVDD_NO		2	/* 2.7V */
-#define LDO_CAM_DVDD_NO		3	/* 1.2V */
-#define LDO_CAM_IOVDD_NO	4	/* 2.6V */
 
 /* accelerometer */
 #define ACCEL_GPIO_INT	 	33
@@ -79,14 +61,8 @@
 
 /* lcd & backlight */
 #define GPIO_LCD_BL_EN		84
-#define GPIO_BL_I2C_SCL		88
-#define GPIO_BL_I2C_SDA		89
-#define GPIO_LCD_VSYNC_O	97
-#define GPIO_LCD_MAKER_LOW	102
 #define GPIO_LCD_RESET_N	101
 
-#define BL_POWER_SUSPEND 0
-#define BL_POWER_RESUME  1
 /* bluetooth gpio pin */
 enum {
 	BT_WAKE         = 42,
@@ -102,10 +78,6 @@ enum {
 	BT_RESET_N	= 96,
 };
 
-/* for desk dock
- * 2010-07-05, dongjin.ha@lge.com
- */
-#define GPIO_CARKIT_DETECT	21
 /* ear sense driver macros */
 #define GPIO_EAR_SENSE		29
 #define GPIO_HS_MIC_BIAS_EN	26
@@ -115,17 +87,8 @@ extern struct platform_device msm_device_snd;
 extern struct platform_device msm_device_adspdec;
 extern struct i2c_board_info i2c_devices[1];
 
-extern int camera_power_state;
-extern int lcd_bl_power_state;
-
-int camera_power_on(void);
-int camera_power_off(void);
-
 /* interface functions */
 int config_camera_on_gpios(void);
 void config_camera_off_gpios(void);
-void camera_power_mutex_lock(void);
-void camera_power_mutex_unlock(void);
-void swift_pwrsink_resume(void);
 
 #endif

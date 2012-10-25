@@ -1138,7 +1138,3 @@ __WEAK void __init lge_add_mmc_devices(void)
 __WEAK void __init lge_add_misc_devices(void)
 {
 }
-
-__WEAK void __init lge_add_pm_devices(void)
-{
-}
