@@ -1632,18 +1632,18 @@ static struct attribute_group dev_attr_grp = {
 #endif
 
 #ifdef CONFIG_MACH_LGE
+#ifdef CONFIG_MACH_MSM7X27_UNIVA
 static unsigned batt_volt;
 static unsigned chg_therm;
 static unsigned pcb_version;
 static unsigned chg_curr_volt;
 static unsigned batt_therm;
 static unsigned batt_volt_raw;
-#ifdef CONFIG_MACH_MSM7X27_UNIVA
 static unsigned chg_stat_reg;
 static unsigned chg_en_reg;
 #endif
 
-
+#ifdef CONFIG_MACH_MSM7X27_UNIVA
 static ssize_t msm_batt_batt_volt_show(struct device* dev, struct device_attribute* attr, char* buf)
 {
 	batt_volt = lge_get_batt_volt();
@@ -1686,7 +1686,6 @@ static ssize_t msm_batt_batt_volt_raw_show(struct device* dev, struct device_att
 }
 static DEVICE_ATTR(batt_volt_raw, S_IRUGO, msm_batt_batt_volt_raw_show, NULL);
 
-#ifdef CONFIG_MACH_MSM7X27_UNIVA
 static ssize_t msm_batt_chg_stat_reg_show(struct device* dev, struct device_attribute* attr, char* buf)
 {
 	chg_stat_reg = lge_get_chg_stat_reg();
@@ -1704,13 +1703,13 @@ static DEVICE_ATTR(chg_en_reg, S_IRUGO, msm_batt_chg_en_reg_show, NULL);
 #endif
 
 static struct attribute* dev_attrs_lge_batt_info[] = {
+#ifdef CONFIG_MACH_MSM7X27_UNIVA
 	&dev_attr_batt_volt.attr,
 	&dev_attr_chg_therm.attr,
 	&dev_attr_pcb_version.attr,
 	&dev_attr_chg_curr_volt.attr,
 	&dev_attr_batt_therm.attr,
 	&dev_attr_batt_volt_raw.attr,	
-#ifdef CONFIG_MACH_MSM7X27_UNIVA	
 	&dev_attr_chg_stat_reg.attr,
 	&dev_attr_chg_en_reg.attr,
 #endif	

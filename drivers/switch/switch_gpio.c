@@ -25,8 +25,24 @@
 #include <linux/workqueue.h>
 #include <linux/gpio.h>
 
+#include <linux/input.h>
+
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#define DEBUG_HS	1
+
+#if DEBUG_HS
+#define D(fmt, args...) printk(fmt, ##args)
+#else
+#define D(fmt, args...) do () while(0)
+#endif
+#endif
+
+#define		HEADSET_IRQ		29
+#define		DRIVER_NAME		"swift-headset"
+
 struct gpio_switch_data {
 	struct switch_dev sdev;
+	struct input_dev* ipdev;
 	unsigned gpio;
 	const char *name_on;
 	const char *name_off;
@@ -43,7 +59,15 @@ static void gpio_switch_work(struct work_struct *work)
 		container_of(work, struct gpio_switch_data, work);
 
 	state = gpio_get_value(data->gpio);
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+	D("hs:%d\n", state);
+#endif 
+
+	printk(KERN_INFO "==== headset jack remove or insert: %d\n", state);
+
+	input_report_switch(data->ipdev, 0, state != 0);
 	switch_set_state(&data->sdev, state);
+	input_sync(data->ipdev);
 }
 
 static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
@@ -74,11 +98,15 @@ static int gpio_switch_probe(struct platform_device *pdev)
 {
 	struct gpio_switch_platform_data *pdata = pdev->dev.platform_data;
 	struct gpio_switch_data *switch_data;
-	int ret = 0;
+	int ret = 0, rc = 0;
+	struct input_dev* ipdev;
 
 	if (!pdata)
 		return -EBUSY;
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+	D("hs_probe :%s\n", pdata->name);
+#endif 
 	switch_data = kzalloc(sizeof(struct gpio_switch_data), GFP_KERNEL);
 	if (!switch_data)
 		return -ENOMEM;
@@ -95,13 +123,31 @@ static int gpio_switch_probe(struct platform_device *pdev)
 	if (ret < 0)
 		goto err_switch_dev_register;
 
+	if (switch_data->gpio == HEADSET_IRQ){
 	ret = gpio_request(switch_data->gpio, pdev->name);
 	if (ret < 0)
 		goto err_request_gpio;
+			printk(KERN_INFO "==== gpio_29 request is success ====\n");
+	}
+	else {
+			printk(KERN_INFO "==== gpio_29 request is fail ====\n");
+			goto err_request_gpio;
+	}
+	
+	/*ret = gpio_request(switch_data->gpio, pdev->name);
+    *	if (ret < 0)
+	*	goto err_request_gpio;
+	*/
 
 	ret = gpio_direction_input(switch_data->gpio);
 	if (ret < 0)
 		goto err_set_gpio_input;
+
+	ret = gpio_tlmm_config(GPIO_CFG(switch_data->gpio, 0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
+							GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+
+	if (rc)
+			printk(KERN_INFO "==== %s: gpio_29 configuration fail ====\n",__func__);
 
 	INIT_WORK(&switch_data->work, gpio_switch_work);
 
@@ -111,10 +157,43 @@ static int gpio_switch_probe(struct platform_device *pdev)
 		goto err_detect_irq_num_failed;
 	}
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+	ret = request_irq(switch_data->irq, gpio_irq_handler, IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING, pdev->name, switch_data);
+#else
 	ret = request_irq(switch_data->irq, gpio_irq_handler,
 			  IRQF_TRIGGER_LOW, pdev->name, switch_data);
+#endif
 	if (ret < 0)
 		goto err_request_irq;
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+	set_irq_wake(switch_data->irq, 1);
+#endif
+	ipdev = input_allocate_device();
+	if (!ipdev){
+			rc = -ENOMEM;
+			goto err_alloc_input_dev;
+	}
+
+	input_set_drvdata(ipdev, switch_data);
+	switch_data->ipdev = ipdev;
+
+	if (pdev->dev.platform_data)
+			ipdev->name = pdev->dev.platform_data;
+	else
+			ipdev->name = DRIVER_NAME;
+
+	ipdev->id.vendor	= 0x0001;
+	ipdev->id.product	= 1;
+	ipdev->id.version	= 1;
+
+	input_set_capability(ipdev, EV_SW, SW_HEADPHONE_INSERT);
+
+	rc = input_register_device(ipdev);
+	if (rc) {
+			dev_err(&ipdev->dev,
+							"gpio_switch_probe: input_register_device rc=%d\n", rc);
+			goto err_reg_input_dev;
+	}
 
 	/* Perform initial detection */
 	gpio_switch_work(&switch_data->work);
@@ -129,6 +208,10 @@ err_request_gpio:
     switch_dev_unregister(&switch_data->sdev);
 err_switch_dev_register:
 	kfree(switch_data);
+err_alloc_input_dev:
+	printk(KERN_INFO "==== input class registeration fail ====\n");
+err_reg_input_dev:
+	input_free_device(ipdev);
 
 	return ret;
 }
@@ -137,6 +220,7 @@ static int __devexit gpio_switch_remove(struct platform_device *pdev)
 {
 	struct gpio_switch_data *switch_data = platform_get_drvdata(pdev);
 
+	input_unregister_device(switch_data->ipdev);
 	cancel_work_sync(&switch_data->work);
 	gpio_free(switch_data->gpio);
     switch_dev_unregister(&switch_data->sdev);
