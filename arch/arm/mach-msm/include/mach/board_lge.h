@@ -471,6 +471,8 @@ void __init lge_add_ramconsole_devices(void);
 void __init lge_add_panic_handler_devices(void);
 void __init lge_add_ers_devices(void);
 
+void __init amp_init_gpio_i2c_device(void);
+
 void __init lge_add_camera_devices(void);
 void __init lge_add_input_devices(void);
 void __init lge_add_lcd_devices(void);

@@ -65,6 +65,9 @@ static struct map_desc msm_io_desc[] __initdata = {
 	MSM_DEVICE(CLK_CTL),
 	MSM_DEVICE(AD5),
 	MSM_DEVICE(MDC),
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+	MSM_DEVICE(WEB),
+#endif
 #ifdef CONFIG_MSM_DEBUG_UART
 	MSM_DEVICE(DEBUG_UART),
 #endif
@@ -81,9 +84,6 @@ static struct map_desc msm_io_desc[] __initdata = {
 		.length =   MSM_SHARED_RAM_SIZE,
 		.type =     MT_DEVICE,
 	},
-#if defined(CONFIG_MACH_LGE)
-	MSM_DEVICE(WEB),
-#endif
 };
 
 void __init msm_map_common_io(void)

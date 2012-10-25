@@ -157,13 +157,8 @@
 
 #if defined(CONFIG_MACH_LGE)
 /* vibrator for MN Register */
-#if !defined(CONFIG_VMSPLIT_2G) && defined (CONFIG_LGE_4G_DDR)
-/* To support 512MB SDRAM in VMSPLIT_3G */
-#define MSM_WEB_BASE          IOMEM(0xFB00C000)
-#else
-#define MSM_WEB_BASE          IOMEM(0xEB00C000)
-#endif
-#define MSM_WEB_PHYS          0xA9D00040 //0xA9D00000 in code.
+#define MSM_WEB_BASE          IOMEM(0xE100C000)
+#define MSM_WEB_PHYS          0xA9D00040
 #define MSM_WEB_SIZE          SZ_4K
 #endif /* CONFIG_MACH_LGE */
 

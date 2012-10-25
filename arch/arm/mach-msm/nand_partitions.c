@@ -46,11 +46,9 @@ struct msm_ptbl_entry {
 	__u32 flags;
 };
 
-#ifdef CONFIG_MACH_LGE
-//[LGE_UPDATE_S] DMS_SYSTEM hyunwook.choo 2011-06-09
-#define MSM_MAX_PARTITIONS 12
-//[LGE_UPDATE_E] DMS_SYSTEM hyunwook.choo 
-#else /* original */
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#define MSM_MAX_PARTITIONS 16
+#else
 #define MSM_MAX_PARTITIONS 10
 #endif
 
