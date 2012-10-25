@@ -1151,9 +1151,10 @@ wl_iw_control_wl_off(
 /* LGE_CHANGE_S, [yoohoo@lge.com], 2010-01-27, successive power key press lock up */
 #if defined(CONFIG_LGE_BCM432X_PATCH)
 	up(&wl_off_sem);
-    if (wl_off_flags == 1) {
-        return 0;
-    }
+    if(wl_off_flags == 1){
+                return 0;
+	}
+    else
     wl_off_flags = 1;
 	down(&wl_off_sem);
 #endif /* CONFIG_LGE_BCM432X_PATCH */
@@ -4382,7 +4383,8 @@ wl_iw_set_power(
 
 	WL_TRACE(("%s: SIOCSIWPOWER\n", dev->name));
 
-	pm = vwrq->disabled ? PM_OFF : PM_MAX;
+//	pm = vwrq->disabled ? PM_OFF : PM_MAX;
+	pm = vwrq->disabled ? PM_OFF : PM_FAST;
 
 	pm = htod32(pm);
 	if ((error = dev_wlc_ioctl(dev, WLC_SET_PM, &pm, sizeof(pm))))

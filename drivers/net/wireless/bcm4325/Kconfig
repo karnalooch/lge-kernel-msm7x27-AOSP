@@ -3,7 +3,6 @@ config BCM4325
 	depends on WLAN
 	default m
 	select WIRELESS_EXT
-	select WEXT_PRIV
 	---help---
 	  This is a driver for the Broadcom 4325 wireless chip.
 
@@ -85,5 +84,5 @@ config BRCM_USE_SOFTAP
 
 config BRCM_USE_STATIC_BUF
 	bool "Use static buff of osl_malloc"
-	default y
+	default n
 	depends on BCM4325
