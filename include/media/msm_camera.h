@@ -183,6 +183,11 @@
  *  structure
  *****************************************************/
 
+struct msm_af_cfg_cmd {
+	int cmd_type;
+	int mode;
+};
+
 /* define five type of structures for userspace <==> kernel
  * space communication:
  * command 1 - 2 are from userspace ==> kernel
@@ -205,7 +210,6 @@ struct msm_vfe_evt_msg {
 	unsigned short msg_id;
 	int af_mode_locked;
 	unsigned int len;	/* size in, number of bytes out */
-
 	void *data;
 };
 
@@ -410,7 +414,6 @@ struct fd_roi_info {
 };
 
 struct msm_frame {
-
 	int path;
 	unsigned long buffer;
 	uint32_t y_off;
@@ -487,19 +490,14 @@ struct msm_snapshot_pp_status {
 #define CFG_GET_AF_MAX_STEPS		26
 #define CFG_GET_PICT_MAX_EXP_LC		27
 #define CFG_SEND_WB_INFO    28
-#define CFG_MAX 			29
 
-/* LGE_CHANGE_S [junyeong.han@lge.com] Add CFG values for auto focus */
-/* 2010-05-02: Add auto-focus values */
-/* 2010-05-05: Add setting iso values */
-/* 2010-05-14: Add setting scene values */
-//LGE_DEV_PORTING UNIVA
-#if defined (CONFIG_ISX005) || defined (CONFIG_MT9T113) || defined (CONFIG_S5K5CAGA) || defined (CONFIG_MT9P111)
 #define CFG_START_AF_FOCUS	101
 #define CFG_CHECK_AF_DONE	102
 #define CFG_CHECK_AF_CANCEL	103
 #define CFG_AF_LOCKED		104
 #define CFG_AF_UNLOCKED		105
+
+#if defined (CONFIG_ISX005) || defined (CONFIG_MT9T113) || defined (CONFIG_S5K5CAGA) || defined (CONFIG_MT9P111)
 
 #define CFG_SET_ISO			201
 #define CFG_SET_SCENE		202
@@ -510,8 +508,14 @@ struct msm_snapshot_pp_status {
 #define CFG_SET_PARM_AF_MODE 206
 #define CFG_GET_CURRENT_ISO 207
 #define CFG_GET_CHECK_SNAPSHOT 208
+
+#define CFG_MAX 			29
+
+#define SENSOR_QTR_SIZE			0
+#define SENSOR_FULL_SIZE		1
+#define SENSOR_QVGA_SIZE		2
+#define SENSOR_INVALID_SIZE		3
 #endif
-/* LGE_CHANGE_E [junyeong.han@lge.com] */
 
 #define MOVE_NEAR	0
 #define MOVE_FAR	1
@@ -521,33 +525,79 @@ struct msm_snapshot_pp_status {
 #define SENSOR_RAW_SNAPSHOT_MODE	2
 #define SENSOR_VIDEO_120FPS_MODE	3
 
-#define SENSOR_QTR_SIZE			0
-#define SENSOR_FULL_SIZE		1
-#define SENSOR_QVGA_SIZE		2
-#define SENSOR_INVALID_SIZE		3
+#define CAMERA_EFFECT_OFF 0
+#define CAMERA_EFFECT_MONO 1
+#define CAMERA_EFFECT_SEPIA 2
+#define CAMERA_EFFECT_NEGATIVE 3
+#define CAMERA_EFFECT_SOLARIZE 6
+#define CAMERA_EFFECT_POSTERIZE 8
+#define CAMERA_EFFECT_WHITEBOARD 9
+#define CAMERA_EFFECT_BLACKBOARD 10
+#define CAMERA_EFFECT_AQUA 11
+#define CAMERA_EFFECT_MAX 12
 
-#define CAMERA_EFFECT_OFF		0
-#define CAMERA_EFFECT_MONO		1
-#define CAMERA_EFFECT_NEGATIVE		2
-#define CAMERA_EFFECT_SOLARIZE		3
-#define CAMERA_EFFECT_SEPIA		4
-#define CAMERA_EFFECT_POSTERIZE		5
-#define CAMERA_EFFECT_WHITEBOARD	6
-#define CAMERA_EFFECT_BLACKBOARD	7
-#define CAMERA_EFFECT_AQUA		8
-
-/* LGE_CHANGE_S [junyeong.han@lge.com] Add CAMERA_EFFECT values */
-/* 2010-05-13: Add CAMERA_EFFECT values */
-//LGE_DEV_PORTING UNIVA
 #if defined (CONFIG_ISX005) || defined (CONFIG_MT9T113) || defined (CONFIG_S5K5CAGA) || defined(CONFIG_MT9P111)
 #define CAMERA_EFFECT_NEGATIVE_SEPIA	9
 #define CAMERA_EFFECT_BLUE				10
 #define CAMERA_EFFECT_PASTEL			11
 #define CAMERA_EFFECT_MAX				12
-#else	/* 5330 origin */
-#define CAMERA_EFFECT_MAX		9
 #endif
-/* LGE_CHANGE_E [junyeong.han@lge.com] */
+
+/*Special modes */
+/*Auto focus mode */
+#define AUTO_FOCUS  0
+#define MACRO_FOCUS 1
+
+/*Special effects */
+#define	 CAMERA_EFFECT_PASTEL 10
+#define	 CAMERA_EFFECT_NEGATIVE_SEPIA 11
+#define	 CAMERA_EFFECT_BLUE 12
+
+/*white balance */
+#define	 CAMERA_WB_MIN 0 
+#define	 CAMERA_WB_AUTO 1
+#define	 CAMERA_WB_INCANDESCENT 2
+#define	 CAMERA_WB_SUNNY 3
+#define	 CAMERA_WB_FLUORESCENT 4 
+#define	 CAMERA_WB_CLOUDY 5
+#define	 CAMERA_WB_CUSTOM 6
+#define	 CAMERA_WB_DAYLIGHT 7
+#define	 CAMERA_WB_CLOUDY_DAYLIGHT 8 
+#define	 CAMERA_WB_TWILIGHT 9
+#define	 CAMERA_WB_SHADE 10
+#define	 CAMERA_WB_MAX 11
+
+/*ISO MODES*/
+#define	CAMERA_ISO_AUTO 0 
+#define	CAMERA_ISO_100 1 
+#define	CAMERA_ISO_200 2
+#define	CAMERA_ISO_400 3
+#define	CAMERA_ISO_800 4
+#define	CAMERA_ISO_DEBLUR 5
+#define	CAMERA_ISO_MAX 6
+
+/*Scene modes */
+#define	CAMERA_SCENE_NORMAL 0
+#define	CAMERA_SCENE_PORTRAIT 1
+#define	CAMERA_SCENE_LANDSCAPE 2
+#define	CAMERA_SCENE_SPORT 3
+#define	CAMERA_SCENE_SUNSET 4
+#define	CAMERA_SCENE_NIGHT 5
+#define	CAMERA_SCENE_BACKLIGHT 6
+#define	CAMERA_SCENE_NIGHT_PORTRAIT 7
+#define	CAMERA_SCENE_BEACH 8
+#define	CAMERA_SCENE_PARTY 9
+#define	CAMERA_SCENE_MAX 10
+
+/*cfg*/
+#define CFG_SET_AF_PARAM_INIT	128
+#define CFG_SET_AF_START		129
+#define CFG_GET_AF_STATUS		130
+#define CFG_SET_ZOOM_VIDEO 38
+#define CFG_SET_PARM_AF_MODE 36
+#define CFG_SET_ISO 28
+#define CFG_SET_SCENE_MODE 29
+#define CFG_SET_CANCEL_FOCUS 35
 
 struct sensor_pict_fps {
 	uint16_t prevfps;

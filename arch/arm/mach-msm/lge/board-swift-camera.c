@@ -24,28 +24,12 @@
 
 #include "board-swift.h"
 
-DEFINE_MUTEX(camera_power_mutex);
-int camera_power_state;
-
-void camera_power_mutex_lock()
-{
-	mutex_lock(&camera_power_mutex);
-}
-
-void camera_power_mutex_unlock()
-{
-	mutex_unlock(&camera_power_mutex);
-}
-
 struct i2c_board_info i2c_devices[1] = {
-#if defined (CONFIG_ISX005_SWIFT)
 	{
 		I2C_BOARD_INFO("isx005", CAM_I2C_SLAVE_ADDR),
 	},
-#endif
 };
 
-#if defined (CONFIG_MSM_CAMERA)
 static uint32_t camera_off_gpio_table[] = {
 	/* parallel CAMERA interfaces */
 	GPIO_CFG(4,  0, GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA), /* DAT0 */
@@ -104,81 +88,6 @@ void config_camera_off_gpios(void)
 		ARRAY_SIZE(camera_off_gpio_table));
 }
 
-int camera_power_on (void)
-{
-	int rc = 0;
-	struct vreg *vreg_mmc;
-
-	camera_power_mutex_lock();
-	if(lcd_bl_power_state == BL_POWER_SUSPEND)
-	{
-		swift_pwrsink_resume();
-		mdelay(50);
-	}
-
-
-	/* clear RESET, PWDN to Low*/
-	gpio_set_value(GPIO_CAM_RESET, 0);
-	gpio_set_value(GPIO_CAM_PWDN, 0);
-
-	vreg_mmc = vreg_get(0, "mmc");
-	vreg_set_level(vreg_mmc, 2800);
-	vreg_enable(vreg_mmc);
-
-	mdelay(5);
-	/*M Clock -24Mhz*/
-	msm_camio_clk_rate_set(CAM_DEFAULT_CLOCK_RATE);
-	mdelay(5);
-	msm_camio_camif_pad_reg_reset();
-	mdelay(5);
-
-	/*reset high*/
-	gpio_set_value(GPIO_CAM_RESET, 1);
-
-	mdelay(5); 
-	/*Nstandby high*/
-	gpio_set_value(GPIO_CAM_PWDN, 1);
-
-	mdelay(8);  // T2 
-
-	camera_power_state = CAM_POWER_ON;
-
-
-/* power_on_fail: */
-	camera_power_mutex_unlock();
-	return rc;
-
-}
-
-int camera_power_off (void)
-{
-	int rc = 0;
-	struct vreg *vreg_mmc;
-
-	camera_power_mutex_lock();
-
-	if (lcd_bl_power_state == BL_POWER_SUSPEND) {
-		swift_pwrsink_resume();
-		mdelay(50);
-	}
-	/*Nstandby low*/
-	gpio_set_value(GPIO_CAM_PWDN, 0);
-	mdelay(5);
-
-	/*reset low*/
-	gpio_set_value(GPIO_CAM_RESET, 0);
-
-	/* it is for rev.c and default */
-	vreg_mmc = vreg_get(0, "mmc");
-	vreg_set_level(vreg_mmc, 0);
-	vreg_disable(vreg_mmc);
-	camera_power_state = CAM_POWER_OFF;
-
-/* power_off_fail: */
-	camera_power_mutex_unlock();
-	return rc;
-}
-
 static struct msm_camera_device_platform_data msm_camera_device_data = {
 	.camera_gpio_on  = config_camera_on_gpios,
 	.camera_gpio_off = config_camera_off_gpios,
@@ -186,11 +95,8 @@ static struct msm_camera_device_platform_data msm_camera_device_data = {
 	.ioext.mdcsz  = MSM_MDC_SIZE,
 	.ioext.appphy = MSM_CLK_CTL_PHYS,
 	.ioext.appsz  = MSM_CLK_CTL_SIZE,
-	.camera_power_on = camera_power_on,
-	.camera_power_off = camera_power_off,
 };
 
-#if defined (CONFIG_ISX005_SWIFT)
 static struct msm_camera_sensor_flash_data flash_none = {
 	.flash_type = MSM_CAMERA_FLASH_NONE,
 };
@@ -211,14 +117,9 @@ static struct platform_device msm_camera_sensor_isx005 = {
 		.platform_data = &msm_camera_sensor_isx005_data,
 	},
 };
-#endif
-
-#endif
 
 static struct platform_device *swift_camera_devices[] __initdata = {
-#if defined (CONFIG_ISX005_SWIFT)
 	&msm_camera_sensor_isx005,
-#endif
 };
 
 void __init lge_add_camera_devices(void)

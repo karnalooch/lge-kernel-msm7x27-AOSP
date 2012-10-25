@@ -461,35 +461,6 @@ static int msm_pmem_frame_ptov_lookup(struct msm_sync *sync,
 	return -EINVAL;
 }
 
-static int msm_pmem_frame_ptov_lookup2(struct msm_sync *sync,
-		unsigned long pyaddr,
-		struct msm_pmem_info *pmem_info,
-		int clear_active)
-{
-	struct msm_pmem_region *region;
-	struct hlist_node *node, *n;
-	unsigned long flags = 0;
-
-	spin_lock_irqsave(&sync->pmem_frame_spinlock, flags);
-	hlist_for_each_entry_safe(region, node, n, &sync->pmem_frames, list) {
-		if (pyaddr == (region->paddr + region->info.y_off) &&
-				region->info.active) {
-			/* offset since we could pass vaddr inside
-			 * a registerd pmem buffer
-			 */
-			memcpy(pmem_info, &region->info, sizeof(*pmem_info));
-			if (clear_active)
-				region->info.active = 0;
-			spin_unlock_irqrestore(&sync->pmem_frame_spinlock,
-				flags);
-			return 0;
-		}
-	}
-
-	spin_unlock_irqrestore(&sync->pmem_frame_spinlock, flags);
-	return -EINVAL;
-}
-
 static unsigned long msm_pmem_stats_ptov_lookup(struct msm_sync *sync,
 		unsigned long addr, int *fd)
 {
@@ -2138,7 +2109,6 @@ static int msm_pp_release(struct msm_sync *sync, void __user *arg)
 		}
 		CDBG("%s: delivering pp_snap\n", __func__);
 		msm_enqueue(&sync->pict_q, &sync->pp_snap->list_pict);
-		msm_enqueue(&sync->pict_q, &sync->pp_thumb->list_pict);
 		sync->pp_snap = NULL;
 		sync->pp_thumb = NULL;
 		spin_unlock_irqrestore(&pp_snap_spinlock, flags);
@@ -2407,6 +2377,9 @@ static long msm_ioctl_control(struct file *filep, unsigned int cmd,
 	case MSM_CAM_IOCTL_GET_CAMERA_INFO:
 		rc = msm_get_camera_info(argp);
 		break;
+	case MSM_CAM_IOCTL_SENSOR_IO_CFG:
+		rc = pmsm->sync->sctrl.s_config(argp);
+		break;	
 	case MSM_CAM_IOCTL_GET_PICTURE:
 	  pr_err("Get piccture ioctl");
 		rc = msm_get_pic(pmsm->sync, argp);
@@ -2530,6 +2503,7 @@ static int msm_release_frame(struct inode *node, struct file *filep)
 	rc = __msm_release(pmsm->sync);
 	if (!rc) {
 		msm_queue_drain(&pmsm->sync->frame_q, list_frame);
+		msm_queue_drain(&pmsm->sync->pict_q, list_pict);
 		atomic_set(&pmsm->opened, 0);
 	}
 	pr_info("%s, completed\n", __func__);
@@ -3107,6 +3081,14 @@ static int msm_open_common(struct inode *inode, struct file *filep,
 	return rc;
 }
 
+static int msm_open_frame(struct inode *inode, struct file *filep)
+{
+  struct msm_cam_device *pmsm =
+  container_of(inode->i_cdev, struct msm_cam_device, cdev);
+  msm_queue_drain(&pmsm->sync->frame_q, list_frame);
+  return msm_open_common(inode, filep, 1, 0);
+}
+
 static int msm_open(struct inode *inode, struct file *filep)
 {
 	return msm_open_common(inode, filep, 1, 0);
@@ -3154,7 +3136,7 @@ static const struct file_operations msm_fops_control = {
 
 static const struct file_operations msm_fops_frame = {
 	.owner = THIS_MODULE,
-	.open = msm_open,
+	.open = msm_open_frame,
 	.unlocked_ioctl = msm_ioctl_frame,
 	.release = msm_release_frame,
 	.poll = msm_poll_frame,
