@@ -21,6 +21,10 @@
 #include <linux/slab.h>
 #include <linux/wakelock.h>
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#include <mach/gpio.h>
+#endif /* CONFIG_MACH_MSM7X27_SWIFT */
+
 struct gpio_kp {
 	struct gpio_event_input_devs *input_devs;
 	struct gpio_event_matrix_info *keypad_info;
@@ -262,6 +266,9 @@ static int gpio_keypad_request_irqs(struct gpio_kp *kp)
 	}
 
 	for (i = 0; i < mi->ninputs; i++) {
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+		gpio_tlmm_config(GPIO_CFG(mi->input_gpios[i], 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+#endif /* CONFIG_MACH_MSM7X27_SWIFT */
 		err = irq = gpio_to_irq(mi->input_gpios[i]);
 		if (err < 0)
 			goto err_gpio_get_irq_num_failed;

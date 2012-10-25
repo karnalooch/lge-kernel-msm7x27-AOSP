@@ -667,7 +667,7 @@ msm_i2c_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Primary i2c_add_adapter failed\n");
 		goto err_i2c_add_adapter_failed;
 	}
-
+#ifndef CONFIG_MACH_MSM7X27_SWIFT
 	i2c_set_adapdata(&dev->adap_aux, dev);
 	dev->adap_aux.algo = &msm_i2c_algo;
 	strlcpy(dev->adap_aux.name,
@@ -681,6 +681,7 @@ msm_i2c_probe(struct platform_device *pdev)
 		i2c_del_adapter(&dev->adap_pri);
 		goto err_i2c_add_adapter_failed;
 	}
+#endif
 	ret = request_irq(dev->irq, msm_i2c_interrupt,
 			IRQF_TRIGGER_RISING, pdev->name, dev);
 	if (ret) {
@@ -700,7 +701,9 @@ msm_i2c_probe(struct platform_device *pdev)
 	dev->clk_state = 0;
 	/* Config GPIOs for primary and secondary lines */
 	pdata->msm_i2c_config_gpio(dev->adap_pri.nr, 1);
+#ifndef CONFIG_MACH_MSM7X27_SWIFT
 	pdata->msm_i2c_config_gpio(dev->adap_aux.nr, 1);
+#endif
 	clk_disable(dev->clk);
 	setup_timer(&dev->pwr_timer, msm_i2c_pwr_timer, (unsigned long) dev);
 
@@ -710,7 +713,9 @@ err_pm_qos_add_request_failed:
 	free_irq(dev->irq, dev); 
 err_request_irq_failed:
 	i2c_del_adapter(&dev->adap_pri);
+#ifndef CONFIG_MACH_MSM7X27_SWIFT
 	i2c_del_adapter(&dev->adap_aux);
+#endif
 err_i2c_add_adapter_failed:
 	clk_disable(clk);
 	iounmap(dev->base);
@@ -741,7 +746,9 @@ msm_i2c_remove(struct platform_device *pdev)
 	pm_qos_remove_request(dev->pm_qos_req);
 	free_irq(dev->irq, dev);
 	i2c_del_adapter(&dev->adap_pri);
+#ifndef CONFIG_MACH_MSM7X27_SWIFT
 	i2c_del_adapter(&dev->adap_aux);
+#endif
 	clk_put(dev->clk);
 	iounmap(dev->base);
 	kfree(dev);

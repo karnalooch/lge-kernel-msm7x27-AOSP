@@ -22,6 +22,9 @@
 #include <linux/slab.h>
 #include <linux/wakelock.h>
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#include <mach/gpio.h>
+#endif /* CONFIG_MACH_MSM7X27_SWIFT */
 enum {
 	DEBOUNCE_UNSTABLE     = BIT(0),	/* Got irq, while debouncing */
 	DEBOUNCE_PRESSED      = BIT(1),
@@ -208,6 +211,9 @@ static int gpio_event_input_request_irqs(struct gpio_input_state *ds)
 	unsigned long req_flags = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING;
 
 	for (i = 0; i < ds->info->keymap_size; i++) {
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)	
+		gpio_tlmm_config(GPIO_CFG(ds->info->keymap[i].gpio, 0, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA), GPIO_CFG_ENABLE);
+#endif /* CONFIG_MACH_MSM7X27_SWIFT */
 		err = irq = gpio_to_irq(ds->info->keymap[i].gpio);
 		if (err < 0)
 			goto err_gpio_get_irq_num_failed;
@@ -245,9 +251,11 @@ int gpio_event_input_func(struct gpio_event_input_devs *input_devs,
 	di = container_of(info, struct gpio_event_input_info, info);
 
 	if (func == GPIO_EVENT_FUNC_SUSPEND) {
+		spin_lock_irqsave(&ds->irq_lock, irqflags);
 		if (ds->use_irq)
 			for (i = 0; i < di->keymap_size; i++)
 				disable_irq(gpio_to_irq(di->keymap[i].gpio));
+		spin_unlock_irqrestore(&ds->irq_lock, irqflags);
 		hrtimer_cancel(&ds->timer);
 		return 0;
 	}
