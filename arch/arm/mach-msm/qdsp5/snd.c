@@ -55,20 +55,244 @@ static struct snd_ctxt the_snd;
 #define RPC_SND_PROG	0x30000002
 #define RPC_SND_CB_PROG	0x31000002
 
-#define RPC_SND_VERS                    0x00020001
+#define RPC_SND_VERS                    0x00020003
 
 #define SND_SET_DEVICE_PROC 2
 #define SND_SET_VOLUME_PROC 3
 #define SND_AVC_CTL_PROC 29
 #define SND_AGC_CTL_PROC 30
-#define SND_SET_FM_RADIO_VOLUME_PROC 72
 
-//LGE_SND_UPDATE_S [
-#define SND_72XX_RPC_EXTCMD_PROC 40
-#define SND_AUDIO_CAL_PROC 41
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#define SND_SET_VOCCAL_PARAM_PROC	37
+#define SND_SET_VOCCAL_IIR_PARAM_PROC 38
+#define SND_SET_NEXT_EC_PARAM_PROC 39
+#define SND_SET_RX_VOLUME_PROC 40
+#define SND_SET_DTMF_VOLUME_PROC 41
+#define SND_SET_PAD_VALUE_PROC 42
+#define SND_SET_LOOPBACK_MODE_PROC 43
+#define SND_WRITE_EFS_PROC 44
+#define SND_SET_MICAMP_GAIN_PROC 45
 #define SND_SET_AMP_GAIN_PROC 46
+#define SND_WRITE_MEM_PROC 47
+#define SND_SET_FM_RADIO_VOLUME_PROC 48
+#define SND_SET_VOICE_CLARITY_PROC 49
+#define SND_SET_POWER_OFF_PROC 50
+#define SND_SET_FM_RADIO_MULTI_SOUND_PROC 51
+#endif
 
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)		
+#define GPIO_HS_MIC_BIAS_EN		26
+#endif
+
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)
+#define DEBUG_SND	1
+
+#if DEBUG_SND
 #define D(fmt, args...) printk(fmt, ##args)
+#else
+#define D(fmt, args...) do () while(0)
+#endif
+#endif
+
+struct rpc_snd_set_device_args {
+	uint32_t device;
+	uint32_t ear_mute;
+	uint32_t mic_mute;
+
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct rpc_snd_set_volume_args {
+	uint32_t device;
+	uint32_t method;
+	uint32_t volume;
+
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct rpc_snd_avc_ctl_args {
+	uint32_t avc_ctl;
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct rpc_snd_agc_ctl_args {
+	uint32_t agc_ctl;
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct snd_set_device_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_set_device_args args;
+};
+
+struct snd_set_volume_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_set_volume_args args;
+};
+
+struct snd_avc_ctl_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_avc_ctl_args args;
+};
+
+struct snd_agc_ctl_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_agc_ctl_args args;
+};
+
+struct snd_endpoint *get_snd_endpoints(int *size);
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)		
+#define AUD_PWROFF 0xFF
+
+////////////snd_set_voccal_param_msg////////////////
+struct rpc_snd_set_voccal_param_args {
+	voc_codec_type voc_codec;
+	voccal_property_enum_type voccal_param_type;
+	int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+    uint32_t param_val;
+
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+
+struct snd_set_voccal_param_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_set_voccal_param_args args;
+};
+////////snd_set_voccal_iir_param_msg////////////////////
+
+struct rpc_snd_set_voccal_iir_param_args {
+     voc_codec_type voc_codec;
+     voccal_iir_filter_type voccal_iir_param_type;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t param_val;
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+
+struct snd_set_voccal_iir_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_voccal_iir_param_args args;
+};
+///////////snd_set_next_ec_param_msg////////////////
+
+struct rpc_snd_set_next_ec_param_args {
+     voc_ec_type ec_mode;
+     nextgen_ec_param_enum_type ec_param_type;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t param_val;
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_next_ec_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_next_ec_param_args args;
+};
+///////////snd_set_rx_volume_param_msg///////////////
+
+struct rpc_snd_set_rx_volume_param_args {
+     uint32_t device;
+     uint32_t method;
+     uint32_t idx;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t param_val;
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_rx_volume_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_rx_volume_param_args args;
+};
+///////////snd_set_dtmf_volume_param_msg///////////////
+
+struct rpc_snd_set_dtmf_volume_param_args {
+     uint32_t device;
+     uint32_t method;
+     uint32_t idx;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t param_val;
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_dtmf_volume_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_dtmf_volume_param_args args;
+};
+/////////////snd_set_pad_value_param_msg////////////
+
+struct rpc_snd_set_pad_value_param_args {
+     uint32_t device;
+     uint32_t method;
+     uint32_t idx;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t param_val;
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_pad_value_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_pad_value_param_args args;
+};
+///////////////snd_set_loopback_mode_msg///////////////
+
+struct rpc_snd_set_loopback_mode_args {
+     uint32_t mode;
+//	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+ 
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_loopback_mode_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_loopback_mode_args args;
+};
+//////////////snd_write_efs_msg//////////////////////
+
+struct rpc_snd_write_efs_args {
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_write_efs_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_write_efs_args args;
+};
+///////////////snd_set_micamp_gain_param_msg//////////
+
+struct rpc_snd_set_micamp_gain_param_args {
+     int32_t voc_codec;
+     int32_t mic_channel;
+	 int get_flag;  //get_flag = 0 for set, get_flag = 1 for get
+     int32_t get_param;
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+
+struct snd_set_micamp_gain_param_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_micamp_gain_param_args args;
+};
+///////////////snd_set_micamp_item_param_rep/////////////
+
+struct snd_set_micamp_item_param_rep {
+	struct rpc_reply_hdr hdr;
+	uint32_t get_gainvalue;
+}mrep;
+////////////snd_set_set_amp_gain_param_msg//////////////
 
 struct rpc_snd_set_amp_gain_param_args {
      voc_codec_type voc_codec;
@@ -83,6 +307,32 @@ struct snd_set_set_amp_gain_param_msg {
     struct rpc_request_hdr hdr;
     struct rpc_snd_set_amp_gain_param_args args;
 };
+//////////////snd_set_fm_radio_vol_msg//////////////////
+
+struct rpc_snd_set_fm_radio_vol_args {
+     uint32_t volume;
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+ 
+struct snd_set_fm_radio_vol_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_fm_radio_vol_args args;
+};
+////////////snd_set_voice_clarity_msg////////////////
+
+struct rpc_snd_set_voice_clarity_args {
+     uint32_t mode;
+     uint32_t cb_func;
+     uint32_t client_data;
+};
+
+struct snd_set_voice_clarity_msg {
+    struct rpc_request_hdr hdr;
+    struct rpc_snd_set_voice_clarity_args args;
+};
+//////////////////////////////////////////////////////
+
 
 extern int amp_write_register(char reg, int  val);
 extern int amp_read_register(char reg, int *ret);
@@ -98,6 +348,8 @@ extern int amp_read_register(char reg, int *ret);
 #define		SND_DEVICE_FM_RADIO_SPEAKER_MEDIA		10 // FOR FM RADIO HEADSET MEDIA MULTI
 #define		SND_DEVICE_BT_HEADSET					12 // FOR BT (SCO)
 #define		SND_DEVICE_A2DP_HEADSET					11 // FOR BT (A2DP)
+
+static int CurrentSndDevice = -1;
 
 static void set_amp_gain(voc_codec_type voc_codec, amp_gain_type gain_type, int value)
 {
@@ -249,114 +501,7 @@ static int get_amp_gain(voc_codec_type voc_codec, amp_gain_type gain_type)
 	}
 	return ret;
 }
-//LGE_SND_UPDATE_E ]
-
-struct rpc_snd_set_device_args {
-	uint32_t device;
-	uint32_t ear_mute;
-	uint32_t mic_mute;
-
-	uint32_t cb_func;
-	uint32_t client_data;
-};
-
-struct rpc_snd_set_volume_args {
-	uint32_t device;
-	uint32_t method;
-	uint32_t volume;
-
-	uint32_t cb_func;
-	uint32_t client_data;
-};
-
-struct rpc_snd_avc_ctl_args {
-	uint32_t avc_ctl;
-	uint32_t cb_func;
-	uint32_t client_data;
-};
-
-struct rpc_snd_agc_ctl_args {
-	uint32_t agc_ctl;
-	uint32_t cb_func;
-	uint32_t client_data;
-};
-
-//LGE_SND_UPDATE_S [
-struct rpc_snd_72xx_rpc_extcmd_args {
-	uint32_t rpc_extcmd;
-	uint32_t option;
-
-     uint32_t cb_func;
-     uint32_t client_data;
-};
- 
-struct rpc_snd_audio_cal_args {
-	uint32_t nCalType;
-	uint32_t nCmd;
-	uint32_t nDevice;
-	uint32_t nIndex;
-	uint32_t nSubIndex;
-	uint32_t nItem;
-
-     uint32_t cb_func;
-     uint32_t client_data;
-};
-//LGE_SND_UPDATE_E ]
- 
-struct snd_set_device_msg {
-    struct rpc_request_hdr hdr;
-	struct rpc_snd_set_device_args args;
-};
- 
-struct snd_set_volume_msg {
-    struct rpc_request_hdr hdr;
-	struct rpc_snd_set_volume_args args;
-};
-
-struct snd_avc_ctl_msg {
-    struct rpc_request_hdr hdr;
-	struct rpc_snd_avc_ctl_args args;
-};
-
-struct snd_agc_ctl_msg {
-    struct rpc_request_hdr hdr;
-	struct rpc_snd_agc_ctl_args args;
-};
-
-//LGE_SND_UPDATE_S [
-struct snd_72xx_rpc_extcmd_msg {
-    struct rpc_request_hdr hdr;
-    struct rpc_snd_72xx_rpc_extcmd_args args;
-};
-
-struct snd_72xx_rpc_extcmd_msg_rep {
-	struct rpc_reply_hdr hdr;
-    uint32_t result;
-} extcmd_msg_rep;
-
-struct snd_audio_cal_msg {
-    struct rpc_request_hdr hdr;
-    struct rpc_snd_audio_cal_args args;
-};
-
-struct snd_audio_cal_msg_rep {
-	struct rpc_reply_hdr hdr;
-    uint32_t result;
-} cal_msg_rep;
-
-struct rpc_snd_set_fm_radio_vol_args {
-     uint32_t volume;
-     uint32_t cb_func;
-     uint32_t client_data;
-};
-
-struct snd_set_fm_radio_vol_msg {
-    struct rpc_request_hdr hdr;
-    struct rpc_snd_set_fm_radio_vol_args args;
-};
-//LGE_SND_UPDATE_E ]
-
-struct snd_endpoint *get_snd_endpoints(int *size);
+#endif
 
 static inline int check_mute(int mute)
 {
@@ -400,32 +545,99 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct snd_avc_ctl_msg avc_msg;
 	struct snd_agc_ctl_msg agc_msg;
 
-//LGE_SND_UPDATE_S [
+	struct msm_snd_device_config dev;
+	struct msm_snd_volume_config vol;
+	struct snd_ctxt *snd = file->private_data;
+
+	struct msm_snd_set_voccal_param		 voccal;
+	struct snd_set_voccal_param_msg		 cmsg;
+
+	struct msm_snd_set_voccal_iir_param voccaliir;
+	struct snd_set_voccal_iir_param_msg cimsg;	
+
+	struct msm_snd_set_next_ec_param nextec;
+	struct snd_set_next_ec_param_msg nmsg;
+
+	struct msm_snd_set_rx_volume_param rxvol;
+	struct snd_set_rx_volume_param_msg rmsg;	
+
+	struct msm_snd_set_dtmf_volume_param dtmfvol;	
+	struct snd_set_dtmf_volume_param_msg fmsg;
+
+	struct msm_snd_set_pad_value_param padvalue;
+	struct snd_set_pad_value_param_msg pmsg;
+
+	struct msm_snd_set_loopback_mode_param loopback;
+	struct snd_set_loopback_mode_msg lmsg;	
+
+	struct snd_write_efs_msg wmsg;
+
+	struct msm_snd_set_micamp_gain_param micampgain;
+	struct snd_set_micamp_gain_param_msg mamsg;
+
 	struct msm_snd_set_amp_gain_param ampgain;
 	struct snd_set_set_amp_gain_param_msg amsg;
+
+	struct msm_snd_set_fm_radio_vol_param fmradiovol;
+	struct snd_set_fm_radio_vol_msg fmrmsg;	
+
+	struct msm_snd_set_voice_clarity_param voiceclarity;
+	struct snd_set_voice_clarity_msg vcmsg;
+
+
+	//int fm_radio_vol;
+	int wefs;
+
+	struct snd_set_voccal_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_voccal;
+	}crep;	
+
+	struct snd_set_voccal_iir_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_voccal_iir;
+	}cirep;	
+
+	struct snd_set_nextec_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_nextec;
+	}nrep;	
+
+	struct snd_set_rxvol_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_rxvol;
+	}rrep;	
+
+	struct snd_set_dtmfvol_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_dtmfvol;
+	}frep;	
+
+	struct snd_set_padvalue_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_padvalue;
+	}prep;	
+
+	struct snd_set_loopback_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_mode;
+	}lrep;	
+
+	struct snd_write_efs_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t result;
+	}wrep;	
 
 	struct snd_set_amp_gain_param_rep {
 		struct rpc_reply_hdr hdr;
 		uint32_t get_gainvalue;
 	}arep;
-//LGE_SND_UPDATE_E ]
 
-//LGE_SND_UPDATE_S [
-	struct snd_72xx_rpc_extcmd_msg rpc_extcmd_msg;
-	struct snd_audio_cal_msg cal_msg;
-//LGE_SND_UPDATE_E ]
+	struct snd_set_voice_clarity_param_rep {
+		struct rpc_reply_hdr hdr;
+		uint32_t get_mode;
+	}vcrep;	
 
-	struct msm_snd_device_config dev;
-	struct msm_snd_volume_config vol;
-
-//LGE_SND_UPDATE_S [
-    struct msm_snd_72xx_rpc_extcmd_config rpc_extcmd_conf;
-	struct msm_snd_audio_cal_config snd_audio_cal_conf;
-	struct msm_snd_set_fm_radio_vol_param fmradiovol;
-	struct snd_set_fm_radio_vol_msg fmrmsg;
-//LGE_SND_UPDATE_E ]
-
-	struct snd_ctxt *snd = file->private_data;
 	int rc = 0;
 
 	uint32_t avc, agc;
@@ -450,7 +662,6 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		dmsg.args.cb_func = -1;
 		dmsg.args.client_data = 0;
-
 		MM_INFO("snd_set_device %d %d %d\n", dev.device,
 				dev.ear_mute, dev.mic_mute);
 
@@ -537,91 +748,283 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rc = get_endpoint(snd, arg);
 		break;
 
-//LGE_SND_UPDATE_S [
-	case SND_72XX_RPC_EXTCMD:
-		if (copy_from_user(&rpc_extcmd_conf, (void __user *) arg, sizeof(rpc_extcmd_conf))) {
-			MM_ERR("SND_72XX_RPC_EXTCMD: invalid pointer\n");
-			rc = -EFAULT;
-		break;
-	}
-
-		rpc_extcmd_msg.args.rpc_extcmd = cpu_to_be32(rpc_extcmd_conf.rpc_extcmd);
-		rpc_extcmd_msg.args.option = cpu_to_be32(rpc_extcmd_conf.option);
-
-		rpc_extcmd_msg.args.cb_func = -1;
-		rpc_extcmd_msg.args.client_data = 0;
-
-		MM_INFO("SND_72XX_RPC_EXTCMD %d %d \n", rpc_extcmd_conf.rpc_extcmd, rpc_extcmd_conf.option);
+#if defined (CONFIG_MACH_MSM7X27_SWIFT)
+	case SND_SET_VOCCAL_PARAM:
+		if (copy_from_user(&voccal, (void __user*) arg, sizeof(voccal))){
+				pr_err("snd_ioctl set vocal_param: invalid pointer.\n");
+				rc = -EFAULT;
+				break;
+		}
+		cmsg.args.voc_codec = cpu_to_be32(voccal.voc_codec);
+		cmsg.args.voccal_param_type = cpu_to_be32(voccal.voccal_param_type);
+		cmsg.args.get_flag = cpu_to_be32(voccal.get_flag);
+		cmsg.args.param_val = cpu_to_be32(voccal.param_val);
+		cmsg.args.cb_func = -1;
+		cmsg.args.client_data = 0;
+		pr_info("snd_set_voccal_param %d %d %d %d\n", voccal.voc_codec,
+						voccal.voccal_param_type, voccal.get_flag, voccal.param_val);
 
 		rc = msm_rpc_call_reply(snd->ept,
-			SND_72XX_RPC_EXTCMD_PROC,
-			&rpc_extcmd_msg, sizeof(rpc_extcmd_msg), &(extcmd_msg_rep), sizeof (extcmd_msg_rep), 5 * HZ);
-					
+						SND_SET_VOCCAL_PARAM_PROC,
+						&cmsg, sizeof(cmsg), &crep, sizeof(crep), 5*HZ);
 		if (rc < 0){
-			MM_ERR("rpc err because");
+				printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
 		}
-		else {
-			rpc_extcmd_conf.result = be32_to_cpu(extcmd_msg_rep.result);
-			MM_INFO("snd 72xx rpc extcmd result=[%d]\n", rpc_extcmd_conf.result);
-			if (copy_to_user((void __user *)arg, &rpc_extcmd_conf, sizeof(rpc_extcmd_conf))) {
-				MM_INFO("snd_ioctl get voccal: invalid write pointer.\n");
-				rc = -EFAULT;
-			}
+		else
+		{
+				voccal.get_param = be32_to_cpu(crep.get_voccal);
+				printk(KERN_INFO "%s:voccal ->%d\n", __func__, voccal.get_param);
+				if (copy_to_user((void __user*)arg, &voccal, sizeof(voccal))){
+						pr_err("snd_ioctl get voccal: invalid write pointer.\n");
+						rc = -EFAULT;
+				}
 		}
 		break;
 
-	case SND_AUDIO_CAL:
-		if (copy_from_user(&snd_audio_cal_conf, (void __user *) arg, sizeof(snd_audio_cal_conf))) {
-			MM_ERR("SND_AUDIO_CAL: invalid pointer\n");
+	case SND_SET_VOCCAL_IIR_PARAM:
+	if (copy_from_user(&voccaliir, (void __user *) arg, sizeof(voccaliir))) {
+		pr_err("snd_ioctl set_voccal_iir_param: invalid pointer.\n");
+		rc = -EFAULT;
+		break;
+	}
+	cimsg.args.voc_codec = cpu_to_be32(voccaliir.voc_codec);
+	cimsg.args.voccal_iir_param_type = cpu_to_be32(voccaliir.voccal_iir_param_type);
+	cimsg.args.get_flag = cpu_to_be32(voccaliir.get_flag);
+	cimsg.args.param_val = cpu_to_be32(voccaliir.param_val);
+	cimsg.args.cb_func = -1;
+	cimsg.args.client_data = 0;
+	pr_info("set_voccal_iir_param %d %d %d\n", voccaliir.voc_codec,
+					 voccaliir.voccal_iir_param_type, voccaliir.param_val);
+
+	rc = msm_rpc_call_reply(snd->ept,
+		SND_SET_VOCCAL_IIR_PARAM_PROC,
+		&cimsg, sizeof(cimsg),&cirep, sizeof(cirep), 5 * HZ);
+	if (rc < 0){
+		printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+	}
+	else
+	{
+		voccaliir.get_param = be32_to_cpu(cirep.get_voccal_iir);
+		printk(KERN_INFO "%s:voccal_iir ->%d\n", __func__, voccaliir.get_param);
+		if (copy_to_user((void __user *)arg, &voccaliir, sizeof(voccaliir))) {
+			pr_err("snd_ioctl get voccal iir: invalid write pointer.\n");
+			rc = -EFAULT;
+		}
+	}
+	break;
+
+	case SND_SET_NEXT_EC_PARAM:
+	if (copy_from_user(&nextec, (void __user *) arg, sizeof(nextec))) {
+		pr_err("snd_ioctl set_next_ec_param: invalid pointer.\n");
+		rc = -EFAULT;
+		break;
+	}
+	nmsg.args.ec_mode = cpu_to_be32(nextec.ec_mode);
+	nmsg.args.ec_param_type = cpu_to_be32(nextec.ec_param_type);
+	nmsg.args.get_flag = cpu_to_be32(nextec.get_flag);
+	nmsg.args.param_val = cpu_to_be32(nextec.param_val);
+	nmsg.args.cb_func = -1;
+	nmsg.args.client_data = 0;
+	pr_info("set_next_ec_param %d %d %d\n", nextec.ec_mode,
+					 nextec.ec_param_type, nextec.param_val);
+
+	rc = msm_rpc_call_reply(snd->ept,
+		SND_SET_NEXT_EC_PARAM_PROC,
+		&nmsg, sizeof(nmsg),&nrep, sizeof(nrep), 5 * HZ);
+	if (rc < 0){
+		printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+	}
+	else
+	{
+		nextec.get_param = be32_to_cpu(nrep.get_nextec);
+		printk(KERN_INFO "%s:nextec ->%d\n", __func__, nextec.get_param);
+		if (copy_to_user((void __user *)arg, &nextec, sizeof(nextec))) {
+			pr_err("snd_ioctl get next ec: invalid write pointer.\n");
+			rc = -EFAULT;
+		}
+	}
+	break;
+
+	case SND_SET_RX_VOLUME:
+		if (copy_from_user(&rxvol, (void __user *) arg, sizeof(rxvol))) {
+			pr_err("snd_ioctl set_rx_volume: invalid pointer.\n");
 			rc = -EFAULT;
 			break;
 		}
-
-		cal_msg.args.nCalType = cpu_to_be32(snd_audio_cal_conf.nCalType);
-		cal_msg.args.nCmd = cpu_to_be32(snd_audio_cal_conf.nCmd);
-		cal_msg.args.nDevice = cpu_to_be32(snd_audio_cal_conf.nDevice);
-		cal_msg.args.nIndex = cpu_to_be32(snd_audio_cal_conf.nIndex);
-		cal_msg.args.nSubIndex = cpu_to_be32(snd_audio_cal_conf.nSubIndex);
-		cal_msg.args.nItem = cpu_to_be32(snd_audio_cal_conf.nItem);		
-
-		cal_msg.args.cb_func = -1;
-		cal_msg.args.client_data = 0;
-
-		MM_INFO("SND_AUDIO_CAL %d %d %d %d %d %d\n", snd_audio_cal_conf.nCalType, snd_audio_cal_conf.nCmd,
-					snd_audio_cal_conf.nDevice, snd_audio_cal_conf.nIndex, snd_audio_cal_conf.nSubIndex, snd_audio_cal_conf.nItem);
+		rmsg.args.device = cpu_to_be32(rxvol.device);
+		rmsg.args.method = cpu_to_be32(rxvol.method);
+		rmsg.args.idx = cpu_to_be32(rxvol.idx);
+		rmsg.args.get_flag = cpu_to_be32(rxvol.get_flag);
+		rmsg.args.param_val = cpu_to_be32(rxvol.param_val);
+		rmsg.args.cb_func = -1;
+		rmsg.args.client_data = 0;
+		pr_info("set_rx_volume %d %d %d %d\n", rxvol.device,
+						 rxvol.method, rxvol.idx, rxvol.param_val);
 
 		rc = msm_rpc_call_reply(snd->ept,
-			SND_AUDIO_CAL_PROC,
-			&cal_msg, sizeof(cal_msg), &(cal_msg_rep), sizeof (cal_msg_rep), 5 * HZ);
-
+			SND_SET_RX_VOLUME_PROC,
+			&rmsg, sizeof(rmsg),&rrep, sizeof(rrep), 5 * HZ);
 		if (rc < 0){
-			MM_ERR("rpc err because");
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
 		}
-		else {
-			snd_audio_cal_conf.result = be32_to_cpu(cal_msg_rep.result);
-			MM_INFO("snd audio cal result=[%d]\n", snd_audio_cal_conf.result);
-			if (copy_to_user((void __user *)arg, &snd_audio_cal_conf, sizeof(snd_audio_cal_conf))) {
-				MM_INFO("snd_ioctl get voccal: invalid write pointer.\n");
+		else
+		{
+			rxvol.get_param = be32_to_cpu(rrep.get_rxvol);
+			printk(KERN_INFO "%s:rx vol ->%d\n", __func__, rxvol.get_param);
+			if (copy_to_user((void __user *)arg, &rxvol, sizeof(rxvol))) {
+				pr_err("snd_ioctl get rx vol: invalid write pointer.\n");
 				rc = -EFAULT;
 			}
 		}
 		break;
-	case SND_SET_FM_RADIO_VOLUME:
-		if (copy_from_user(&fmradiovol, (void __user *) arg, sizeof(fmradiovol))) {
+
+	case SND_SET_DTMF_VOLUME:
+		if (copy_from_user(&dtmfvol, (void __user *) arg, sizeof(dtmfvol))) {
+			pr_err("snd_ioctl set_dtmf_volume: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		fmsg.args.device = cpu_to_be32(dtmfvol.device);
+		fmsg.args.method = cpu_to_be32(dtmfvol.method);
+		fmsg.args.idx = cpu_to_be32(dtmfvol.idx);
+		fmsg.args.get_flag = cpu_to_be32(dtmfvol.get_flag);
+		fmsg.args.param_val = cpu_to_be32(dtmfvol.param_val);
+		fmsg.args.cb_func = -1;
+		fmsg.args.client_data = 0;
+		pr_info("set_dtmf_volume %d %d %d %d\n", dtmfvol.device,
+						 dtmfvol.method, dtmfvol.idx, dtmfvol.param_val);
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_DTMF_VOLUME_PROC,
+			&fmsg, sizeof(fmsg),&frep, sizeof(frep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			dtmfvol.get_param = be32_to_cpu(frep.get_dtmfvol);
+			printk(KERN_INFO "%s:rx vol ->%d\n", __func__, dtmfvol.get_param);
+			if (copy_to_user((void __user *)arg, &dtmfvol, sizeof(dtmfvol))) {
+				pr_err("snd_ioctl get dtmf vol: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
+
+	case SND_SET_PAD_VALUE:
+		if (copy_from_user(&padvalue, (void __user *) arg, sizeof(padvalue))) {
+			pr_err("snd_ioctl set_pad_value: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		pmsg.args.device = cpu_to_be32(padvalue.device);
+		pmsg.args.method = cpu_to_be32(padvalue.method);
+		pmsg.args.idx = cpu_to_be32(padvalue.idx);
+		pmsg.args.get_flag = cpu_to_be32(padvalue.get_flag);
+		pmsg.args.param_val = cpu_to_be32(padvalue.param_val);
+		pmsg.args.cb_func = -1;
+		pmsg.args.client_data = 0;
+		pr_info("set_pad_value %d %d %d %d\n", padvalue.device,
+						 padvalue.method, padvalue.idx, padvalue.param_val);
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_PAD_VALUE_PROC,
+			&pmsg, sizeof(pmsg),&prep, sizeof(prep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			padvalue.get_param = be32_to_cpu(prep.get_padvalue);
+			printk(KERN_INFO "%s:rx vol ->%d\n", __func__, padvalue.get_param);
+			if (copy_to_user((void __user *)arg, &padvalue, sizeof(padvalue))) {
+				pr_err("snd_ioctl get pad value: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
+
+	case SND_SET_LOOPBACK_MODE:
+		if (copy_from_user(&loopback, (void __user *) arg, sizeof(loopback))) {
 			pr_err("snd_ioctl set amp_gain: invalid pointer.\n");
 			rc = -EFAULT;
 			break;
 		}
-		fmrmsg.args.volume = cpu_to_be32(fmradiovol.volume);
-		fmrmsg.args.cb_func = -1;
-		fmrmsg.args.client_data = 0;
-
-		pr_info("snd_set_fm_radio_volume %d\n", fmradiovol.volume);
-
+		lmsg.args.mode = cpu_to_be32(loopback.mode);
+		lmsg.args.cb_func = -1;
+		lmsg.args.client_data = 0;
+		pr_info("set_loopback_mode %d \n", loopback.mode);
+					
 		rc = msm_rpc_call(snd->ept,
-			SND_SET_FM_RADIO_VOLUME_PROC,
-			&fmrmsg, sizeof(fmrmsg), 5 * HZ);
+			SND_SET_LOOPBACK_MODE_PROC,
+			&lmsg, sizeof(lmsg), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			loopback.get_param = be32_to_cpu(lrep.get_mode);
+			printk(KERN_INFO "%s:loopback mode ->%d\n", __func__, loopback.get_param);
+			if (copy_to_user((void __user *)arg, &loopback, sizeof(loopback))) {
+				pr_err("snd_ioctl get loopback mode: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
 		break;
+
+	case SND_WRITE_EFS:
+		wmsg.args.cb_func = -1;
+		wmsg.args.client_data = 0;
+		pr_info("set_write_efs \n");
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_WRITE_EFS_PROC,
+			&wmsg, sizeof(wmsg),&wrep, sizeof(wrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		} 
+		else
+		{
+			wefs = be32_to_cpu(wrep.result);
+			printk(KERN_INFO "%s:loopback mode ->%d\n", __func__, wefs);
+			if (copy_to_user((void __user *)arg, &wefs, sizeof(wefs))) {
+				pr_err("snd_ioctl write efs: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
+
+	case SND_SET_MICAMP_GAIN:
+		if (copy_from_user(&micampgain, (void __user *) arg, sizeof(micampgain))) {
+			pr_err("snd_ioctl set_pad_value: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		mamsg.args.voc_codec = cpu_to_be32(micampgain.voc_codec);
+		mamsg.args.mic_channel = cpu_to_be32(micampgain.mic_channel);
+		mamsg.args.get_flag = cpu_to_be32(micampgain.get_flag);
+		mamsg.args.get_param = cpu_to_be32(micampgain.value);
+		mamsg.args.cb_func = -1;
+		mamsg.args.client_data = 0;
+		pr_info("SND_SET_MICAMP_GAIN %d %d %d %d\n", micampgain.voc_codec,
+						 micampgain.mic_channel, micampgain.get_flag, micampgain.get_param);
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_MICAMP_GAIN_PROC,
+			&mamsg, sizeof(mamsg),&mrep, sizeof(mrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			micampgain.get_param = be32_to_cpu(mrep.get_gainvalue);
+			printk(KERN_INFO "%s:rx vol ->%d\n", __func__, micampgain.get_param);
+			if (copy_to_user((void __user *)arg, &micampgain, sizeof(micampgain))) {
+				pr_err("snd_ioctl get pad value: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
 
 	case SND_SET_AMP_GAIN:
 		if (copy_from_user(&ampgain, (void __user *) arg, sizeof(ampgain))) {
@@ -657,7 +1060,116 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		break;		
 
-//LGE_SND_UPDATE_E ]
+	case SND_WRITE_MEM:	
+		wmsg.args.cb_func = -1;
+		wmsg.args.client_data = 0;
+		pr_info("set_write_efs \n");
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_WRITE_MEM_PROC,
+			&wmsg, sizeof(wmsg),&wrep, sizeof(wrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		} 
+		else
+		{
+			wefs = be32_to_cpu(wrep.result);
+			printk(KERN_INFO "%s:loopback mode ->%d\n", __func__, wefs);
+			if (copy_to_user((void __user *)arg, &wefs, sizeof(wefs))) {
+				pr_err("snd_ioctl write efs: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
+
+	case SND_SET_FM_RADIO_VOLUME:
+		if (copy_from_user(&fmradiovol, (void __user *) arg, sizeof(fmradiovol))) {
+			pr_err("snd_ioctl set amp_gain: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		fmrmsg.args.volume = cpu_to_be32(fmradiovol.volume);
+		fmrmsg.args.cb_func = -1;
+		fmrmsg.args.client_data = 0;
+
+		pr_info("snd_set_fm_radio_volume %d\n", fmradiovol.volume);
+
+		rc = msm_rpc_call(snd->ept,
+			SND_SET_FM_RADIO_VOLUME_PROC,
+			&fmrmsg, sizeof(fmrmsg), 5 * HZ);
+		break;
+		
+	case SND_SET_VOICE_CLARITY:
+		if (copy_from_user(&voiceclarity, (void __user *) arg, sizeof(voiceclarity))) {
+			pr_err("snd_ioctl set amp_gain: invalid pointer.\n");
+			rc = -EFAULT;
+			break;
+		}
+		vcmsg.args.mode = cpu_to_be32(voiceclarity.mode);
+		vcmsg.args.cb_func = -1;
+		vcmsg.args.client_data = 0;
+		pr_info("set_loopback_mode %d \n", voiceclarity.mode);
+					
+		rc = msm_rpc_call(snd->ept,
+			SND_SET_VOICE_CLARITY_PROC,
+			&vcmsg, sizeof(vcmsg), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		}
+		else
+		{
+			voiceclarity.get_param = be32_to_cpu(vcrep.get_mode);
+			printk(KERN_INFO "%s:voice clarity mode ->%d\n", __func__, voiceclarity.get_param);
+			if (copy_to_user((void __user *)arg, &voiceclarity, sizeof(voiceclarity))) {
+				pr_err("snd_ioctl get loopback mode: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;		
+
+	case SND_SET_POWER_OFF:
+		wmsg.args.cb_func = -1;
+		wmsg.args.client_data = 0;
+		pr_info("set_power_off \n");
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_POWER_OFF_PROC,
+			&wmsg, sizeof(wmsg),&wrep, sizeof(wrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		} 
+		else
+		{
+			wefs = be32_to_cpu(wrep.result);
+			if (copy_to_user((void __user *)arg, &wefs, sizeof(wefs))) {
+				pr_err("snd_ioctl write efs: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;	
+
+	case SND_SET_FM_RADIO_MULTI_SOUND:
+		wmsg.args.cb_func = -1;
+		wmsg.args.client_data = 0;
+		pr_info("set_fm_radio_multi_sound \n");
+
+		rc = msm_rpc_call_reply(snd->ept,
+			SND_SET_FM_RADIO_MULTI_SOUND_PROC,
+			&wmsg, sizeof(wmsg),&wrep, sizeof(wrep), 5 * HZ);
+		if (rc < 0){
+			printk(KERN_ERR "%s:rpc err because of %d\n", __func__, rc);
+		} 
+		else
+		{
+			wefs = be32_to_cpu(wrep.result);
+			if (copy_to_user((void __user *)arg, &wefs, sizeof(wefs))) {
+				pr_err("snd_ioctl set_fm_radio_multi_sound: invalid write pointer.\n");
+				rc = -EFAULT;
+			}
+		}
+		break;		
+		
+#endif 
 
 	default:
 		MM_ERR("unknown command\n");
@@ -719,7 +1231,9 @@ static int snd_open(struct inode *inode, struct file *file)
 		MM_ERR("snd already opened\n");
 		rc = -EBUSY;
 	}
-
+#if defined(CONFIG_MACH_MSM7X27_SWIFT)		
+	gpio_direction_output(GPIO_HS_MIC_BIAS_EN, 1);
+#endif
 err:
 	mutex_unlock(&snd->lock);
 	return rc;

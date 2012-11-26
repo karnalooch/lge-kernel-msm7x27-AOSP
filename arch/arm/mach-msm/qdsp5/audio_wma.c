@@ -49,7 +49,6 @@
 #include <mach/qdsp5/qdsp5audppmsg.h>
 #include <mach/qdsp5/qdsp5audplaycmdi.h>
 #include <mach/qdsp5/qdsp5audplaymsg.h>
-#include <mach/qdsp5/qdsp5rmtcmdi.h>
 #include <mach/debug_mm.h>
 
 /* Size must be power of 2 */
@@ -150,7 +149,6 @@ struct audio {
 	int stopped; /* set when stopped, cleared on flush */
 	int pcm_feedback;
 	int buf_refresh;
-	int rmt_resource_released;
 	int teos; /* valid only if tunnel mode & no data left for decoder */
 	enum msm_aud_decoder_state dec_state;	/* Represents decoder state */
 	int reserved; /* A byte is being reserved */
@@ -195,36 +193,6 @@ static void audwma_post_event(struct audio *audio, int type,
 		union msm_audio_event_payload payload);
 #endif
 
-static int rmt_put_resource(struct audio *audio)
-{
-	struct aud_codec_config_cmd cmd;
-	unsigned short client_idx;
-
-	cmd.cmd_id = RM_CMD_AUD_CODEC_CFG;
-	cmd.client_id = RM_AUD_CLIENT_ID;
-	cmd.task_id = audio->dec_id;
-	cmd.enable = RMT_DISABLE;
-	cmd.dec_type = AUDDEC_DEC_WMA;
-	client_idx = ((cmd.client_id << 8) | cmd.task_id);
-
-	return put_adsp_resource(client_idx, &cmd, sizeof(cmd));
-}
-
-static int rmt_get_resource(struct audio *audio)
-{
-	struct aud_codec_config_cmd cmd;
-	unsigned short client_idx;
-
-	cmd.cmd_id = RM_CMD_AUD_CODEC_CFG;
-	cmd.client_id = RM_AUD_CLIENT_ID;
-	cmd.task_id = audio->dec_id;
-	cmd.enable = RMT_ENABLE;
-	cmd.dec_type = AUDDEC_DEC_WMA;
-	client_idx = ((cmd.client_id << 8) | cmd.task_id);
-
-	return get_adsp_resource(client_idx, &cmd, sizeof(cmd));
-}
-
 /* must be called with audio->lock held */
 static int audio_enable(struct audio *audio)
 {
@@ -234,17 +202,6 @@ static int audio_enable(struct audio *audio)
 	MM_DBG("\n"); /* Macro prints the file name and function */
 	if (audio->enabled)
 		return 0;
-
-	if (audio->rmt_resource_released == 1) {
-		audio->rmt_resource_released = 0;
-		rc = rmt_get_resource(audio);
-		if (rc) {
-			MM_ERR("ADSP resources are not available for WMA \
-				session 0x%08x on decoder: %d\n Ignoring \
-				error and going ahead with the playback\n",
-				(int)audio, audio->dec_id);
-		}
-	}
 
 	audio->dec_state = MSM_AUD_DECODER_STATE_NONE;
 	audio->out_tail = 0;
@@ -306,8 +263,6 @@ static int audio_disable(struct audio *audio)
 		if (audio->pcm_feedback == TUNNEL_MODE_PLAYBACK)
 			audmgr_disable(&audio->audmgr);
 		audio->out_needed = 0;
-		rmt_put_resource(audio);
-		audio->rmt_resource_released = 1;
 	}
 	return rc;
 }
@@ -1402,8 +1357,6 @@ static int audio_release(struct inode *inode, struct file *file)
 	MM_INFO("audio instance 0x%08x freeing\n", (int)audio);
 	mutex_lock(&audio->lock);
 	audio_disable(audio);
-	if (audio->rmt_resource_released == 0)
-		rmt_put_resource(audio);
 	audio_flush(audio);
 	audio_flush_pcm_buf(audio);
 	msm_adsp_put(audio->audplay);
@@ -1652,16 +1605,6 @@ static int audio_open(struct inode *inode, struct file *file)
 				audio->module_name, (int)audio);
 		if (audio->pcm_feedback == TUNNEL_MODE_PLAYBACK)
 			audmgr_close(&audio->audmgr);
-		goto err;
-	}
-
-	rc = rmt_get_resource(audio);
-	if (rc) {
-		MM_ERR("ADSP resources are not available for WMA session \
-			 0x%08x on decoder: %d\n", (int)audio, audio->dec_id);
-		if (audio->pcm_feedback == TUNNEL_MODE_PLAYBACK)
-			audmgr_close(&audio->audmgr);
-		msm_adsp_put(audio->audplay);
 		goto err;
 	}
 

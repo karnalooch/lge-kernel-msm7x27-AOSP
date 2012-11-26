@@ -41,6 +41,8 @@
 #include <mach/htc_pwrsink.h>
 #include <mach/debug_mm.h>
 
+#include <linux/syscalls.h>
+
 #include "evlog.h"
 
 #define LOG_AUDIO_EVENTS 1
@@ -731,6 +733,10 @@ static int audio_open(struct inode *inode, struct file *file)
 	int rc;
 
 	mutex_lock(&audio->lock);
+
+	current->signal->rlim[RLIMIT_RTPRIO].rlim_cur = SCHED_RR;
+	current->signal->rlim[RLIMIT_RTPRIO].rlim_max = RLIM_INFINITY;
+
 
 	if (audio->opened) {
 		MM_ERR("busy\n");
